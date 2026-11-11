@@ -16,7 +16,7 @@ Author: Dmitrii Shmygin. Target: Amazfit T-Rex 3, 480 x 480.
 3. Check the time against the phone. Time intentionally uses 24-hour HH:MM.
 4. Confirm the selected face has the green hollow triangle thumbnail.
 5. Check that all values fit and stay still: no clipping or scrolling. Use the browser
-   stress sample for 23:59, 199 bpm, WED, 28.08 and 100%; repeat in the simulator
+   stress sample for 23:59, 199 bpm, WED, 28 AUG and 100%; repeat in the simulator
    if available.
 6. Confirm heart rate agrees with the latest reading on the watch. It is the most
    recent measured value, not a new continuous measurement; missing values show --.
@@ -41,4 +41,5 @@ checked separately from the build and HTML preview.
 
 The green hollow triangle is original SVG artwork in `icon.svg`; `make-icon.cjs`
 generates its 324 x 324 PNG for the watch selector. The triangle is not drawn on
-the active watch face. Font attribution is in `CREDITS.md` and `licenses/`.
+the active watch face. Font attribution and the link to the bundled DSEG license
+are in `CREDITS.md`.

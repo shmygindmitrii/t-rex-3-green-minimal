@@ -4,8 +4,8 @@ Watch face author: Dmitrii Shmygin.
 
 Icon: original green hollow triangle artwork for Green Minimal.
 
-Typography: Bebas Neue, distributed under the SIL Open Font License 1.1.
-The font's copyright notices and full license are included in
-[licenses/BebasNeue-OFL.txt](licenses/BebasNeue-OFL.txt).
+DSEG7 and DSEG14: Copyright (c) 2017, keshikan, under the SIL Open Font License 1.1.
+See [DSEG-LICENSE.txt](assets/480x480-amazfit-t-rex-3/fonts/fonts-DSEG_v046/DSEG-LICENSE.txt).
 
-Font source: https://github.com/google/fonts/tree/main/ofl/bebasneue
+Included fonts: DSEG7 Classic Bold, DSEG14 Classic Regular, DSEG14 Classic Bold.
+Font source: https://github.com/keshikan/DSEG

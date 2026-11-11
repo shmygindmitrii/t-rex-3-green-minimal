@@ -2,9 +2,9 @@
 
 Minimal watch face for Amazfit T-Rex 3 by **Dmitrii Shmygin**.
 
-- Big green 24-hour time in Bebas Neue.
+- Green 24-hour time in DSEG7 Classic Bold, with DSEG7 numeric readings and DSEG14 weekdays.
 - Latest measured heart rate in red; `--` when unavailable.
-- Orange English weekday and date in `DD.MM` format.
+- Orange English weekday and date in `DD MMM` format, such as `11 NOV`.
 - Green battery percentage and a pure black `#000000` background.
 - Green hollow triangle selector icon, with no icons on the active face.
 
@@ -50,13 +50,14 @@ measurement. API 3.0 or later is required. Time refreshes on screen wake, return
 to the face and minute changes. No phone-side service or network access
 is used by the face.
 
-See [CREDITS.md](CREDITS.md) for author and font attribution. The bundled Bebas Neue
-font retains its SIL Open Font License in `licenses/`.
+See [CREDITS.md](CREDITS.md) for author and font attribution.
 
 ## License
 
 Project code and original artwork are available under the [MIT License](LICENSE).
-Bebas Neue is separately licensed under the [SIL Open Font License 1.1](licenses/BebasNeue-OFL.txt).
+DSEG7 and DSEG14 are separately licensed under the [SIL Open Font License 1.1](assets/480x480-amazfit-t-rex-3/fonts/fonts-DSEG_v046/DSEG-LICENSE.txt).
+The MIT license does not apply to these third-party fonts. Their original copyright
+notices and license texts are included with the repository.
 
 Build packages in `dist/` and `release/` are excluded from Git. Distribute them as
 release attachments. The font and icon under `assets/` are required source assets
