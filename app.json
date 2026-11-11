@@ -1,0 +1,60 @@
+{
+  "configVersion": "v2",
+  "app": {
+    "appId": 21895,
+    "appName": "Green Minimal",
+    "appType": "watchface",
+    "version": {
+      "code": 11,
+      "name": "1.2.3"
+    },
+    "icon": "icon.png",
+    "vender": "Dmitrii Shmygin",
+    "description": "Minimal green clock with heart rate, date, weekday and battery percentage on pure black"
+  },
+  "permissions": ["data:user.hd.heart_rate"],
+  "runtime": {
+    "apiVersion": {
+      "compatible": "2.1.0",
+      "target": "2.1.0",
+      "minVersion": "2.1.0"
+    }
+  },
+  "targets": {
+    "480x480-amazfit-t-rex-3": {
+      "module": {
+        "watchface": {
+          "path": "watchface/index",
+          "main": 1,
+          "editable": 0,
+          "lockscreen": 0,
+          "hightCost": 0
+        }
+      },
+      "platforms": [
+        {
+          "name": "Matterhorn",
+          "deviceSource": 8716544,
+          "chip": "ZPS"
+        },
+        {
+          "name": "MatterhornWN",
+          "deviceSource": 8716545,
+          "chip": "ZPS"
+        },
+        {
+          "name": "MatterhornW",
+          "deviceSource": 8716547,
+          "chip": "ZPS"
+        }
+      ],
+      "designWidth": 480
+    }
+  },
+  "i18n": {
+    "en-US": {
+      "appName": "Green Minimal"
+    }
+  },
+  "defaultLanguage": "en-US"
+}

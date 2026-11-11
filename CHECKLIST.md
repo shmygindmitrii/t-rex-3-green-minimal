@@ -1,0 +1,43 @@
+# Green Minimal release checks
+
+Author: Dmitrii Shmygin. Target: Amazfit T-Rex 3, 480 x 480.
+
+## Before installing
+
+- Run `node check.cjs` for mock runtime checks of data updates and lifecycle cleanup.
+- Run `zeus.cmd build` to check bundling, fonts, images and compilation.
+- Open `design.html` to review the layout. Its sample controls exercise long values.
+- This browser preview approximates text layout; the watch remains the final check.
+
+## On the watch
+
+1. Run `zeus.cmd preview`, scan the new QR code and install Green Minimal.
+2. Confirm green time, red heart rate, orange weekday and date, and battery percentage.
+3. Check the time against the phone. Time intentionally uses 24-hour HH:MM.
+4. Confirm the selected face has the green hollow triangle thumbnail.
+5. Check that all values fit and stay still: no clipping or scrolling. Use the browser
+   stress sample for 23:59, 199 bpm, WED, 28.08 and 100%; repeat in the simulator
+   if available.
+6. Confirm heart rate agrees with the latest reading on the watch. It is the most
+   recent measured value, not a new continuous measurement; missing values show --.
+7. Open an app and return to the face. Confirm time and data are correct; wait for
+   the next minute update if needed.
+8. Custom AOD is not included. Confirm that the normal
+   face appears after screen-off/wake cycles. A system AOD style can be used if offered
+   by the watch firmware; this package does not supply its own AOD design.
+9. Leave the face active across midnight and check date and weekday, or test the
+   boundary with simulator time controls. Month and year boundaries need checking too.
+10. Review Developer Mode logs for runtime errors. Compare battery use over a normal
+    day with your usual face and the same AOD/brightness/heart monitoring settings.
+
+## Test coverage
+
+Build and mock checks can be completed locally. Device rendering,
+sensor permission prompts and day-long battery use require the real watch and are
+checked separately from the build and HTML preview.
+
+## Artwork and credits
+
+The green hollow triangle is original SVG artwork in `icon.svg`; `make-icon.cjs`
+generates its 324 x 324 PNG for the watch selector. The triangle is not drawn on
+the active watch face. Font attribution is in `CREDITS.md` and `licenses/`.

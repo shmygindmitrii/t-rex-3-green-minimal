@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Green Minimal — Preview</title>
+<style>
+@font-face { font-family: Bebas; src: url('assets/480x480-amazfit-t-rex-3/fonts/BebasNeue-Regular.ttf'); }
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; display: grid; place-content: center; background: #171a18; }
+.controls { display: flex; gap: 12px; justify-content: center; margin: 24px 0; font: 14px system-ui; color: #ddd; }
+select, button { background: #252c26; color: #eee; border: 1px solid #526353; border-radius: 5px; padding: 8px; }
+.face { width: 480px; height: 480px; position: relative; border-radius: 50%; overflow: hidden; background: #000; box-shadow: 0 0 0 2px #313831; font-family: Bebas, sans-serif; }
+.text { position: absolute; display: flex; align-items: center; justify-content: center; line-height: 1; font-weight: 400; }
+.time { left: 32px; top: 95px; width: 416px; height: 205px; font-size: 200px; color: #75ff69; }
+.bpm { left: 40px; top: 280px; width: 128px; height: 96px; font-size: 80px; color: #ff4949; }
+.weekday { left: 175px; top: 280px; width: 130px; height: 96px; font-size: 64px; color: #ffa044; }
+.date { left: 312px; top: 280px; width: 128px; height: 96px; font-size: 64px; color: #ffa044; }
+.level { left: 160px; top: 378px; width: 160px; height: 76px; font-size: 54px; color: #6bde76; }
+@media (max-width: 500px) { .face { zoom: .72; } }
+</style>
+<div class="face" role="img" aria-label="Green Minimal: time 10:09, heart rate 72, Wednesday 11.11, battery 82 percent">
+  <div class="text time">10:09</div>
+  <div class="text bpm">72</div>
+  <div class="text weekday">WED</div>
+  <div class="text date">11.11</div>
+  <div class="text level">82%</div>
+</div>
+<div class="controls">
+  <select id="sample" aria-label="Sample values">
+    <option value="normal">Normal</option>
+    <option value="wide">Long values</option>
+    <option value="missing">No heart rate</option>
+    <option value="midnight">New year / midnight</option>
+  </select>
+  <img src="icon.svg" width="40" height="40" alt="Green hollow triangle icon">
+</div>
+<script>
+const samples = {
+  normal: ['10:09', '72', 'WED', '11.11', '82%'],
+  wide: ['23:59', '199', 'WED', '28.08', '100%'],
+  missing: ['08:08', '--', 'THU', '08.08', '1%'],
+  midnight: ['00:00', '60', 'FRI', '01.01', '99%'],
+}
+document.querySelector('#sample').addEventListener('change', (event) => {
+  const values = samples[event.target.value]
+  ;['time', 'bpm', 'weekday', 'date', 'level'].forEach((name, i) => {
+    document.querySelector('.' + name).textContent = values[i]
+  })
+  document.querySelector('.face').setAttribute('aria-label', 'Watch face preview: ' + values.join(', '))
+})
+const params = new URLSearchParams(location.search)
+if (samples[params.get('sample')]) {
+  document.querySelector('#sample').value = params.get('sample')
+  document.querySelector('#sample').dispatchEvent(new Event('change'))
+}
+</script>
+</html>

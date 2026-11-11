@@ -1,0 +1,32 @@
+# Build output and release packages
+/dist/
+/release/
+*.zab
+*.zpk
+
+# Dependencies and local caches
+node_modules/
+/.preview-browser/
+/.tools/
+/.cache/
+
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+.npmrc
+.zeus/
+.zpm/
+*.pem
+*.key
+
+# Logs and editor/OS files
+*.log
+.DS_Store
+Thumbs.db
+Desktop.ini
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
