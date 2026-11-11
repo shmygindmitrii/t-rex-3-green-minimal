@@ -2,6 +2,11 @@ import { createWidget, widget, align, prop, text_style } from '@zos/ui'
 import { Time, HeartRate, Battery, Screen } from '@zos/sensor'
 
 const FONT = 'fonts/BebasNeue-Regular.ttf'
+const CLOCK_FONT = 'fonts/DSEG7-Classic/DSEG7Classic-Bold.ttf'
+const HR_FONT = 'fonts/DSEG7-Classic/DSEG7Classic-Regular.ttf'
+const DATE_DDMM_FONT = 'fonts/DSEG7-Classic/DSEG7Classic-Regular.ttf'
+const DATE_DW_FONT = 'fonts/DSEG14-Classic/DSEG14Classic-Light.ttf'
+const BATTERY_FONT = 'fonts/DSEG7-Classic/DSEG7Classic-Regular.ttf'
 const GREEN = 0x75ff69
 const RED = 0xff4949
 const ORANGE = 0xffa044
