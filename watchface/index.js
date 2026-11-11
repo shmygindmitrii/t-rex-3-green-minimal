@@ -1,5 +1,5 @@
 import { createWidget, widget, align, prop, text_style } from '@zos/ui'
-import { Time, HeartRate, Battery } from '@zos/sensor'
+import { Time, HeartRate, Battery, Screen } from '@zos/sensor'
 
 const FONT = 'fonts/BebasNeue-Regular.ttf'
 const GREEN = 0x75ff69
@@ -16,6 +16,7 @@ WatchFace({
     this.time = new Time()
     this.heartRate = new HeartRate()
     this.battery = new Battery()
+    this.screen = new Screen()
     createWidget(widget.FILL_RECT, {
       x: 0, y: 0, w: 480, h: 480, color: 0x000000,
     })
@@ -56,6 +57,12 @@ WatchFace({
     }
     this.refresh()
     this.time.onPerMinute(this.refresh)
+    // Minute events can be missed while the face is suspended.
+    this.onScreenChange = (status) => {
+      if (status === 1) this.refresh()
+    }
+    this.screen.onChange(this.onScreenChange)
+    createWidget(widget.WIDGET_DELEGATE, { resume_call: () => this.refresh() })
     // Follow the latest watch reading without starting continuous measurement.
     this.heartRate.onLastChange(this.refreshHeart)
     this.battery.onChange(this.refreshBattery)
@@ -63,6 +70,7 @@ WatchFace({
   onDestroy() {
     // Time has no documented offPerMinute API; ignore any late callbacks.
     this.destroyed = true
+    if (this.screen) this.screen.offChange(this.onScreenChange)
     if (this.heartRate) this.heartRate.offLastChange(this.refreshHeart)
     if (this.battery) this.battery.offChange(this.refreshBattery)
   },

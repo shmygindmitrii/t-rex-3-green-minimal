@@ -5,8 +5,8 @@
     "appName": "Green Minimal",
     "appType": "watchface",
     "version": {
-      "code": 11,
-      "name": "1.2.3"
+      "code": 12,
+      "name": "1.2.4"
     },
     "icon": "icon.png",
     "vender": "Dmitrii Shmygin",
@@ -15,9 +15,9 @@
   "permissions": ["data:user.hd.heart_rate"],
   "runtime": {
     "apiVersion": {
-      "compatible": "2.1.0",
-      "target": "2.1.0",
-      "minVersion": "2.1.0"
+      "compatible": "3.0.0",
+      "target": "3.0.0",
+      "minVersion": "3.0.0"
     }
   },
   "targets": {

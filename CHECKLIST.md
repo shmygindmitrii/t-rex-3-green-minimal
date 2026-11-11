@@ -20,8 +20,9 @@ Author: Dmitrii Shmygin. Target: Amazfit T-Rex 3, 480 x 480.
    if available.
 6. Confirm heart rate agrees with the latest reading on the watch. It is the most
    recent measured value, not a new continuous measurement; missing values show --.
-7. Open an app and return to the face. Confirm time and data are correct; wait for
-   the next minute update if needed.
+7. Leave the screen off for several minutes, then wake it: time must be correct
+   immediately. Also open an app, wait past a minute boundary, and return to the
+   face. Repeat across an hour change; do not wait for a minute callback to catch up.
 8. Custom AOD is not included. Confirm that the normal
    face appears after screen-off/wake cycles. A system AOD style can be used if offered
    by the watch firmware; this package does not supply its own AOD design.

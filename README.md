@@ -46,7 +46,8 @@ Designed for Amazfit T-Rex 3 at 480 x 480. Custom always-on display is not inclu
 See [CHECKLIST.md](CHECKLIST.md) for build and device checks.
 
 Heart rate follows the watch's latest measurement and does not request continuous
-measurement. API 2.1 or later is required. No phone-side service or network access
+measurement. API 3.0 or later is required. Time refreshes on screen wake, return
+to the face and minute changes. No phone-side service or network access
 is used by the face.
 
 See [CREDITS.md](CREDITS.md) for author and font attribution. The bundled Bebas Neue
