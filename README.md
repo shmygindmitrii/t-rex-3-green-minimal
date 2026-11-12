@@ -4,10 +4,11 @@ Minimal watch face for Amazfit T-Rex 3 by **Dmitrii Shmygin**.
 
 - Old-LCD look: DSEG7/DSEG14 segment fonts with dim unlit "ghost" segments behind
   the text, on a pure black `#000000` background.
-- Orange English weekday and `DD.MM` date above the time, such as `THU 12.11`.
-- Green 24-hour time.
-- `HRT`: latest measured heart rate in red; `--` when unavailable.
-- `BAT`: battery percentage in green.
+- All green: English weekday and `DD.MM` date above the time, such as `THU 12.11`,
+  and a 24-hour time.
+- `HRT`: latest measured heart rate; `--` when unavailable. Turns yellow from
+  130 bpm and red from 158 bpm (zones for a ~34-year-old, max ~186).
+- `BAT`: battery percentage. Turns yellow below 60% and red below 20%.
 - Green hollow triangle selector icon. No images on the active face.
 
 ## Install or update
@@ -51,6 +52,9 @@ The face is a list of horizontal lines:
   behind its text, for example a dim `88:88` behind `10:09`. `ghost: false` on an
   item excludes it, and `ghostColor` sets the color. The default color and the
   segment characters are in `GHOST`.
+- `colorBy: COLOR_RULES.battery` makes an item's color depend on a value. The
+  thresholds and colors are in `COLOR_RULES` and `COLORS`. Labels such as `BAT`
+  use it too, so they change color with their value.
 
 Preview the real face code in a browser:
 
@@ -59,7 +63,7 @@ node preview/server.mjs
 ```
 
 Then open http://localhost:8080/. The page has sample values, including long
-values and missing heart rate. `Guides` shows the center lines and widget boxes.
+values, missing heart rate, and yellow and red heart rate and battery readings. `Guides` shows the center lines and widget boxes.
 Below the face, each line's width and
 position is listed, with a warning when an item goes outside the round screen.
 The browser renders text slightly differently, so check final rendering on the

@@ -1,10 +1,8 @@
 // Browser stand-ins for the Zepp OS APIs, rendering widgets as absolutely
 // positioned elements inside #face. Mapped to '@zos/*' by the import map in index.html.
 const ASSETS = '/assets/480x480-amazfit-t-rex-3/'
-const params = new URLSearchParams(location.search)
 
 export const mock = {
-  device: { width: +params.get('w') || 480, height: +params.get('h') || 480 },
   readings: { hour: 10, minute: 9, day: 4, date: 12, month: 11, bpm: 72, battery: 82 },
   listeners: {},
   widgets: [],
@@ -65,8 +63,6 @@ export function createWidget(type, options) {
   mock.widgets.push(instance)
   return instance
 }
-
-export function getDeviceInfo() { return { ...mock.device } }
 
 const { readings: r, listeners: l } = mock
 export class Time {

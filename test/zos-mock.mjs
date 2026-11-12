@@ -1,7 +1,6 @@
 // Minimal stand-ins for the Zepp OS APIs the face uses. `mock` is the test's
 // handle on sensor readings, registered listeners and created widgets.
 export const mock = {
-  device: { width: 480, height: 480 },
   readings: { hour: 10, minute: 9, day: 4, date: 12, month: 11, bpm: 72, battery: 82 },
   listeners: {},
   widgets: [],
@@ -25,8 +24,6 @@ export function createWidget(type, options) {
   mock.widgets.push(instance)
   return instance
 }
-
-export function getDeviceInfo() { return { ...mock.device } }
 
 const { readings: r, listeners: l } = mock
 const off = (name, callback) => {
