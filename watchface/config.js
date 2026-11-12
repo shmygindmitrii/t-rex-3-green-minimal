@@ -25,6 +25,8 @@
 //   font     path from FONTS
 //   size     font size, px
 //   color    0xRRGGBB
+//   colorBy  value-dependent color, one of COLOR_RULES (see below). Works on fixed
+//            text too, so a label can follow its value.
 //   reserve  sample of the widest expected text, e.g. '000'. The item always takes
 //            at least that width, so the line doesn't shift when the value changes.
 //   align    'left' | 'center' | 'right' inside the reserved width (default center)
@@ -49,6 +51,31 @@ export const COLORS = {
   date: 0x00e90b,
   heartRate: 0x00d701,
   battery: 0x00d701,
+  warning: 0xffd60a, // yellow: battery below 60%, elevated heart rate
+  alert: 0xff3b30, // red: battery below 20%, high heart rate
+}
+
+// Value-dependent colors. An item with `colorBy` takes the color of the first
+// rule that matches the numeric data value, otherwise its own `color`.
+// Rule conditions: `below: n` (value < n) or `atLeast: n` (value >= n).
+// Values that are not numbers, such as '--', keep the item's own color.
+export const COLOR_RULES = {
+  battery: {
+    value: 'battery',
+    rules: [
+      { below: 20, color: COLORS.alert },
+      { below: 60, color: COLORS.warning },
+    ],
+  },
+  // Zones for a ~34-year-old: max heart rate ~ 220 - 34 = 186 bpm.
+  // Yellow from ~70% of max (130 bpm), red from ~85% of max (158 bpm).
+  heartRate: {
+    value: 'heartRate',
+    rules: [
+      { atLeast: 158, color: COLORS.alert },
+      { atLeast: 130, color: COLORS.warning },
+    ],
+  },
 }
 
 // Fonts available in assets/<target>/fonts. After adding a font file, run
@@ -95,7 +122,7 @@ export const LINES = [
     id: 'time',
     y: CY,
     items: [
-      { id: 'clock', value: 'time', font: FONTS.DSEG7_BOLD, size: 136, color: COLORS.time, ghost: true },
+      { id: 'clock', value: 'time', font: FONTS.DSEG7_BOLD, size: 132, color: COLORS.time, ghost: true },
     ],
   },
   {
@@ -103,8 +130,8 @@ export const LINES = [
     y: CY + 120,
     gap: 8,
     items: [
-      { id: 'heartRatePrefix', text: 'HRT', font: FONTS.DSEG14_REGULAR, size: 40, color: COLORS.heartRate, ghost: true },
-      { id: 'heartRate', value: 'heartRate', font: FONTS.DSEG7_BOLD, size: 40, color: COLORS.heartRate, reserve: '000', ghost: true },
+      { id: 'heartRatePrefix', text: 'HRT', font: FONTS.DSEG14_REGULAR, size: 40, color: COLORS.heartRate, colorBy: COLOR_RULES.heartRate, ghost: true },
+      { id: 'heartRate', value: 'heartRate', font: FONTS.DSEG7_BOLD, size: 40, color: COLORS.heartRate, colorBy: COLOR_RULES.heartRate, reserve: '000', ghost: true },
     ],
   },
   {
@@ -112,8 +139,8 @@ export const LINES = [
     y: CY + 168,
     gap: 8,
     items: [
-      { id: 'batteryPrefix', text: 'BAT', font: FONTS.DSEG14_REGULAR, size: 40, color: COLORS.battery, ghost: true},
-      { id: 'battery', value: 'battery', font: FONTS.DSEG7_BOLD, size: 40, color: COLORS.battery, reserve: '000', align: 'right', ghost: true },
+      { id: 'batteryPrefix', text: 'BAT', font: FONTS.DSEG14_REGULAR, size: 40, color: COLORS.battery, colorBy: COLOR_RULES.battery, ghost: true },
+      { id: 'battery', value: 'battery', font: FONTS.DSEG7_BOLD, size: 40, color: COLORS.battery, colorBy: COLOR_RULES.battery, reserve: '000', align: 'right', ghost: true },
     ],
   },
 ]

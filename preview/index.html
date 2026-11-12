@@ -34,6 +34,8 @@ select, label { background: #252c26; color: #eee; border: 1px solid #526353; bor
     <option value="wide">Long values</option>
     <option value="missing">No heart rate</option>
     <option value="midnight">New year / midnight</option>
+    <option value="warning">Elevated HR / half battery</option>
+    <option value="alert">High HR / low battery</option>
   </select>
   <label><input type="checkbox" id="guides"> Guides</label>
 </div>
@@ -73,6 +75,8 @@ const samples = {
   wide: { hour: 23, minute: 59, day: 3, date: 28, month: 8, bpm: 199, battery: 100 },
   missing: { hour: 8, minute: 8, day: 4, date: 8, month: 8, bpm: 0, battery: 1 },
   midnight: { hour: 0, minute: 0, day: 5, date: 1, month: 1, bpm: 60, battery: 99 },
+  warning: { hour: 18, minute: 45, day: 6, date: 14, month: 11, bpm: 142, battery: 45 },
+  alert: { hour: 7, minute: 30, day: 7, date: 15, month: 11, bpm: 172, battery: 12 },
 }
 // Round display: report items whose glyph box corners fall outside the circle.
 const radius = Math.min(config.SCREEN.width, config.SCREEN.height) / 2

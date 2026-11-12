@@ -9,8 +9,8 @@ const { readings, listeners } = mock
 let face
 globalThis.WatchFace = (definition) => { face = definition }
 
-const { LINES, SCREEN, CX, FONTS, GHOST } = await import('../watchface/config.js')
-const { buildLines, measureLine, textWidth, dim } = await import('../watchface/layout.js')
+const { LINES, SCREEN, CX, FONTS, GHOST, COLORS, COLOR_RULES } = await import('../watchface/config.js')
+const { buildLines, measureLine, textWidth, dim, itemColor } = await import('../watchface/layout.js')
 await import('../watchface/index.js')
 
 Object.assign(readings, { hour: 23, minute: 59, day: 7, date: 31, month: 12, bpm: 199, battery: 100 })
@@ -166,5 +166,65 @@ assert.equal(g.widgets.gCustom.text, '100')
 assert.deepEqual(Object.keys(g.ghosts).map((id) => g.widgets[id].x), gx)
 assert.deepEqual(Object.keys(g.ghosts).map((id) => g.ghosts[id].x), gx)
 
-console.log('PASS: startup, centering, reserved widths, rollover, wake/resume catch-up, cleanup, hidden items, ghosts.')
+// --- value-dependent colors (battery and heart rate zones)
+const ruled = (rules, value) => itemColor({ color: 0x123456, colorBy: rules }, { [rules.value]: value })
+const B = COLOR_RULES.battery
+const H = COLOR_RULES.heartRate
+// battery: red below 20, yellow below 60, otherwise the item's own color
+assert.equal(ruled(B, '0'), COLORS.alert)
+assert.equal(ruled(B, '19'), COLORS.alert)
+assert.equal(ruled(B, '20'), COLORS.warning)
+assert.equal(ruled(B, '59'), COLORS.warning)
+assert.equal(ruled(B, '60'), 0x123456)
+assert.equal(ruled(B, '100'), 0x123456)
+// heart rate: own color normally, yellow from 130, red from 158; '--' keeps own color
+assert.equal(ruled(H, '--'), 0x123456)
+assert.equal(ruled(H, '72'), 0x123456)
+assert.equal(ruled(H, '129'), 0x123456)
+assert.equal(ruled(H, '130'), COLORS.warning)
+assert.equal(ruled(H, '157'), COLORS.warning)
+assert.equal(ruled(H, '158'), COLORS.alert)
+assert.equal(ruled(H, '199'), COLORS.alert)
+assert.equal(itemColor({ color: 0x123456 }, { battery: '1' }), 0x123456) // no colorBy
+
+// the configured face: labels, values and their ghosts all follow the value
+const colored = LINES.filter((l) => l.items.some((i) => i.colorBy))
+const cui = buildLines(colored, SCREEN, { heartRate: '72', battery: '82' })
+const expectColor = (ids, color) => ids.forEach((id) => {
+  assert.equal(cui.widgets[id].color, color, id + ' color')
+  if (cui.ghosts[id]) assert.equal(cui.ghosts[id].color, dim(color, GHOST.brightness), id + ' ghost color')
+})
+const hrIds = ['heartRatePrefix', 'heartRate']
+const batIds = ['batteryPrefix', 'battery']
+expectColor(hrIds, COLORS.heartRate)
+expectColor(batIds, COLORS.battery)
+cui.update({ heartRate: '140', battery: '45' })
+expectColor(hrIds, COLORS.warning)
+expectColor(batIds, COLORS.warning)
+cui.update({ heartRate: '170', battery: '7' })
+expectColor(hrIds, COLORS.alert)
+expectColor(batIds, COLORS.alert)
+assert.equal(cui.widgets.battery.text, GHOST.blank + GHOST.blank + '7')
+cui.update({ heartRate: '--', battery: '100' })
+expectColor(hrIds, COLORS.heartRate)
+expectColor(batIds, COLORS.battery)
+
+// the running face recolors on sensor callbacks too
+mock.widgets.length = 0
+Object.assign(readings, { bpm: 165, battery: 15 })
+face.build()
+const fw = face.ui.widgets
+assert.equal(fw.heartRate.color, COLORS.alert)
+assert.equal(fw.battery.color, COLORS.alert)
+readings.bpm = 135
+listeners.heart()
+assert.equal(fw.heartRate.color, COLORS.warning)
+assert.equal(fw.heartRatePrefix.color, COLORS.warning)
+readings.battery = 75
+listeners.battery()
+assert.equal(fw.battery.color, COLORS.battery)
+assert.equal(fw.batteryPrefix.color, COLORS.battery)
+face.onDestroy()
+
+console.log('PASS: startup, centering, reserved widths, rollover, wake/resume catch-up, cleanup, hidden items, ghosts, value colors.')
 console.log('Device rendering still requires real-watch checks. Custom AOD is not included.')

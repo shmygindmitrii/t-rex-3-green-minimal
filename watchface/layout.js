@@ -25,6 +25,25 @@ function itemText(item, values) {
   return value === undefined || value === null ? '' : '' + value
 }
 
+// Current color of an item: the first matching `colorBy` rule for the numeric
+// data value, otherwise the item's own color (also for non-numbers such as '--').
+export function itemColor(item, values) {
+  const by = item.colorBy
+  if (!by) return item.color
+  const raw = values[by.value]
+  const n = raw === undefined || raw === null || raw === '' ? NaN : Number(raw)
+  if (isNaN(n)) return item.color
+  for (const rule of by.rules) {
+    if (rule.below !== undefined && n < rule.below) return rule.color
+    if (rule.atLeast !== undefined && n >= rule.atLeast) return rule.color
+  }
+  return item.color
+}
+
+const ghostColor = (item, line, color) => (item.ghostColor !== undefined ? item.ghostColor
+  : line.ghostColor !== undefined ? line.ghostColor
+    : dim(color, GHOST.brightness))
+
 // Dim a 0xRRGGBB color, as an unlit segment on a black background.
 export function dim(color, factor) {
   const channel = (shift) => Math.round(((color >> shift) & 0xff) * factor) << shift
@@ -71,7 +90,7 @@ function itemBox(item, line) {
 }
 
 // Horizontal placement of one line for the given values.
-// Returns { width, x, items: [{ item, text, ghost, x, w }] }, hidden items excluded.
+// Returns { width, x, items: [{ item, text, ghost, color, x, w }] }, hidden items excluded.
 export function measureLine(line, values, screenWidth) {
   const placed = []
   let width = 0
@@ -88,7 +107,7 @@ export function measureLine(line, values, screenWidth) {
     const ghost = ghostText(item, line, text)
     if (ghost) text = padToGhost(text, ghost, item)
     const w = itemWidth(item, text, ghost)
-    placed.push({ item, text, ghost, x: width, w })
+    placed.push({ item, text, ghost, color: itemColor(item, values), x: width, w })
     width += w
   }
   const x = Math.round(screenWidth / 2 + (line.dx || 0) - width / 2)
@@ -122,17 +141,12 @@ export function buildLines(lines, screen, values) {
   const shown = lines.filter(visible)
 
   shown.forEach((line) => {
-    measureLine(line, values, screen.width).items.forEach(({ item, text, ghost, x, w }) => {
+    measureLine(line, values, screen.width).items.forEach(({ item, text, ghost, color, x, w }) => {
       const box = { x, w, ...itemBox(item, line) }
-      if (ghost !== null) {
-        // Created first so it is drawn behind the lit text.
-        const color = item.ghostColor !== undefined ? item.ghostColor
-          : line.ghostColor !== undefined ? line.ghostColor
-            : dim(item.color, GHOST.brightness)
-        ghosts[item.id] = textWidget(item, box, ghost, color)
-      }
-      widgets[item.id] = textWidget(item, box, text, item.color)
-      state[item.id] = { x, w, text, ghost }
+      // Created first so it is drawn behind the lit text.
+      if (ghost !== null) ghosts[item.id] = textWidget(item, box, ghost, ghostColor(item, line, color))
+      widgets[item.id] = textWidget(item, box, text, color)
+      state[item.id] = { x, w, text, ghost, color }
     })
   })
 
@@ -140,12 +154,12 @@ export function buildLines(lines, screen, values) {
     shown.forEach((line) => {
       const layout = measureLine(line, next, screen.width)
       layouts[line.id] = layout
-      layout.items.forEach(({ item, text, ghost, x, w }) => {
+      layout.items.forEach(({ item, text, ghost, color, x, w }) => {
         const last = state[item.id]
-        if (last.x === x && last.w === w && last.text === text && last.ghost === ghost) return
-        widgets[item.id].setProperty(prop.MORE, { x, w, text })
-        if (ghosts[item.id]) ghosts[item.id].setProperty(prop.MORE, { x, w, text: ghost })
-        state[item.id] = { x, w, text, ghost }
+        if (last.x === x && last.w === w && last.text === text && last.ghost === ghost && last.color === color) return
+        widgets[item.id].setProperty(prop.MORE, { x, w, text, color })
+        if (ghosts[item.id]) ghosts[item.id].setProperty(prop.MORE, { x, w, text: ghost, color: ghostColor(item, line, color) })
+        state[item.id] = { x, w, text, ghost, color }
       })
     })
   }
