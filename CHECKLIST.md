@@ -17,13 +17,12 @@ Author: Dmitrii Shmygin. Target: Amazfit T-Rex 3, 480 x 480.
 1. Run `zeus.cmd preview`, scan the new QR code and install Green Minimal.
 2. Confirm green weekday and DD.MM date, time, HRT heart rate and BAT battery
    percentage, and dim ghost segments behind them.
-3. Confirm value colors change on the watch, both label and value: BAT yellow below
-   60% and red below 20%, HRT yellow from 70% and red from 85% of 220 − your profile
-   age (130 and 158 bpm at 34). Compare with the browser `warning` and `alert`
-   samples. The color changes at runtime, so watch one change happen, e.g. battery
-   dropping through 60% or heart rate rising after exercise, not just a color set
-   at startup. Installing must not show a permission
-   prompt for the profile.
+3. Confirm value colors change on the watch, both label and value, at the
+   thresholds the browser preview lists (from `COLOR_RULES` and your profile age).
+   Compare with the browser `warning` and `alert` samples. The color changes at
+   runtime, so watch one change happen, e.g. battery dropping through the yellow
+   threshold or heart rate rising after exercise, not just a color set at startup.
+   Installing must not show a permission prompt for the profile.
 4. Check the time against the phone. Time intentionally uses 24-hour HH:MM.
 5. Confirm the selected face has the green hollow triangle thumbnail.
 6. Check that all values fit and stay still: no clipping or scrolling. Use the browser

@@ -166,30 +166,42 @@ assert.equal(g.widgets.gCustom.text, '100')
 assert.deepEqual(Object.keys(g.ghosts).map((id) => g.widgets[id].x), gx)
 assert.deepEqual(Object.keys(g.ghosts).map((id) => g.ghosts[id].x), gx)
 
-// --- value-dependent colors (battery and heart rate zones)
-const ruled = (rules, value) => itemColor({ color: 0x123456, colorBy: rules }, { [rules.value]: value })
-const B = COLOR_RULES.battery
-const H = COLOR_RULES.heartRate
-// battery: red below 20, yellow below 60, otherwise the item's own color
-assert.equal(ruled(B, '0'), COLORS.alert)
-assert.equal(ruled(B, '19'), COLORS.alert)
-assert.equal(ruled(B, '20'), COLORS.warning)
-assert.equal(ruled(B, '59'), COLORS.warning)
-assert.equal(ruled(B, '60'), 0x123456)
-assert.equal(ruled(B, '100'), 0x123456)
-// heart rate: own color normally, yellow from 130, red from 158; '--' keeps own color
-assert.equal(ruled(H, '--'), 0x123456)
-assert.equal(ruled(H, '72'), 0x123456)
-assert.equal(ruled(H, '129'), 0x123456)
-assert.equal(ruled(H, '130'), COLORS.warning)
-assert.equal(ruled(H, '157'), COLORS.warning)
-assert.equal(ruled(H, '158'), COLORS.alert)
-assert.equal(ruled(H, '199'), COLORS.alert)
-assert.equal(itemColor({ color: 0x123456 }, { battery: '1' }), 0x123456) // no colorBy
+// --- value-dependent colors. Thresholds are only written in config.js: these
+//     checks read them from COLOR_RULES / HEART_RATE_ZONES.
+const OWN = 0x123456 // item's own color, distinct from every rule color
+const ruled = (entry, value) => itemColor({ color: OWN, colorBy: entry }, { [entry.value]: '' + value })
+const limit = (rule) => (rule.below !== undefined ? rule.below : rule.atLeast)
+// first value in 0..300 that gets `color` (OWN = no rule matches)
+const valueFor = (entry, color) => {
+  for (let v = 0; v <= 300; v++) if (ruled(entry, v) === color) return v
+  throw new Error('no value gets color ' + color.toString(16) + ' for ' + entry.value)
+}
+
+// the rule logic on a fixed rule set: first match wins, below/atLeast edges
+const T = { value: 'x', rules: [{ below: 10, color: 1 }, { atLeast: 90, color: 2 }, { below: 50, color: 3 }] }
+assert.deepEqual([0, 9, 10, 49, 50, 89, 90, 300].map((v) => ruled(T, v)), [1, 1, 3, 3, OWN, OWN, 2, 2])
+assert.equal(ruled(T, '--'), OWN) // not a number
+assert.equal(itemColor({ color: OWN }, { x: '1' }), OWN) // no colorBy
+
+// every configured rule switches exactly at its threshold and is reachable
+for (const [name, entry] of Object.entries(COLOR_RULES)) {
+  for (const rule of entry.rules) {
+    const n = limit(rule)
+    const [inside, outside] = rule.below !== undefined ? [n - 1, n] : [n, n - 1]
+    assert.equal(ruled(entry, inside), rule.color, `${name}: ${inside} gets its rule color`)
+    assert.notEqual(ruled(entry, outside), rule.color, `${name}: ${outside} is past the threshold`)
+  }
+  assert.equal(ruled(entry, '--'), OWN, name + ': -- keeps own color')
+  valueFor(entry, OWN) // some values keep the item's own color
+}
 
 // the configured face: labels, values and their ghosts all follow the value
+const B = COLOR_RULES.battery
+const H = COLOR_RULES.heartRate
+// heart rate and battery values that get `color` (OWN: the items' own colors)
+const at = (color) => ({ heartRate: '' + valueFor(H, color), battery: '' + valueFor(B, color) })
 const colored = LINES.filter((l) => l.items.some((i) => i.colorBy))
-const cui = buildLines(colored, SCREEN, { heartRate: '72', battery: '82' })
+const cui = buildLines(colored, SCREEN, at(OWN))
 const expectColor = (ids, color) => ids.forEach((id) => {
   assert.equal(cui.widgets[id].color, color, id + ' color')
   if (cui.ghosts[id]) assert.equal(cui.ghosts[id].color, dim(color, GHOST.brightness), id + ' ghost color')
@@ -198,66 +210,70 @@ const hrIds = ['heartRatePrefix', 'heartRate']
 const batIds = ['batteryPrefix', 'battery']
 expectColor(hrIds, COLORS.heartRate)
 expectColor(batIds, COLORS.battery)
-cui.update({ heartRate: '140', battery: '45' })
-expectColor(hrIds, COLORS.warning)
-expectColor(batIds, COLORS.warning)
-cui.update({ heartRate: '170', battery: '7' })
-expectColor(hrIds, COLORS.alert)
-expectColor(batIds, COLORS.alert)
-assert.equal(cui.widgets.battery.text, GHOST.blank + GHOST.blank + '7')
-cui.update({ heartRate: '--', battery: '100' })
+for (const color of [COLORS.warning, COLORS.alert]) {
+  cui.update(at(color))
+  expectColor(hrIds, color)
+  expectColor(batIds, color)
+}
+cui.update({ heartRate: '--', battery: '' + valueFor(B, OWN) })
 expectColor(hrIds, COLORS.heartRate)
 expectColor(batIds, COLORS.battery)
 
 // the running face recolors on sensor callbacks too
 mock.widgets.length = 0
-Object.assign(readings, { bpm: 165, battery: 15 })
+Object.assign(readings, { bpm: valueFor(H, COLORS.alert), battery: valueFor(B, COLORS.alert) })
 face.build()
 const fw = face.ui.widgets
 assert.equal(fw.heartRate.color, COLORS.alert)
 assert.equal(fw.battery.color, COLORS.alert)
-readings.bpm = 135
+readings.bpm = valueFor(H, COLORS.warning)
 listeners.heart()
 assert.equal(fw.heartRate.color, COLORS.warning)
 assert.equal(fw.heartRatePrefix.color, COLORS.warning)
-readings.battery = 75
+readings.battery = valueFor(B, OWN)
 listeners.battery()
 assert.equal(fw.battery.color, COLORS.battery)
 assert.equal(fw.batteryPrefix.color, COLORS.battery)
 face.onDestroy()
 
 // --- heart-rate zones follow the profile age: max = 220 - age
-const zones = (rules) => rules.map((r) => r.atLeast) // [red from, yellow from]
-assert.deepEqual(zones(heartRateRules(34)), [158, 130])
-assert.deepEqual(zones(heartRateRules(50)), [145, 119])
-assert.deepEqual(zones(heartRateRules(20)), [170, 140])
-const fallback = zones(heartRateRules(HEART_RATE_ZONES.defaultAge))
-for (const bad of [undefined, null, 0, 5, 150, NaN, '40']) {
+const Z = HEART_RATE_ZONES
+const zones = (rules) => rules.map(limit) // [red from, yellow from]
+const expected = (age) => [Math.round((220 - age) * Z.alert), Math.round((220 - age) * Z.warning)]
+for (const age of [Z.minAge, 20, Z.defaultAge, 50, Z.maxAge]) {
+  assert.deepEqual(zones(heartRateRules(age)), expected(age), 'zones for age ' + age)
+}
+const fallback = expected(Z.defaultAge)
+for (const bad of [undefined, null, 0, Z.minAge - 1, Z.maxAge + 1, NaN, '40']) {
   assert.deepEqual(zones(heartRateRules(bad)), fallback, 'fallback for age ' + bad)
 }
 // the face reads the age at build: granted profile, missing age, no permission, throwing API
+const OLDER = Z.defaultAge + 16
 const buildWith = (setup) => {
   mock.widgets.length = 0
-  Object.assign(mock, { permission: 2, profile: { age: 34 } })
+  Object.assign(mock, { permission: 2, profile: { age: Z.defaultAge } })
   setup()
   face.build()
   const result = zones(COLOR_RULES.heartRate.rules)
   face.onDestroy()
   return result
 }
-assert.deepEqual(buildWith(() => { mock.profile = { age: 50 } }), [145, 119])
+assert.deepEqual(buildWith(() => { mock.profile = { age: OLDER } }), expected(OLDER))
 assert.deepEqual(buildWith(() => { mock.profile = {} }), fallback)
 assert.deepEqual(buildWith(() => { mock.profile = { age: 0 } }), fallback)
-assert.deepEqual(buildWith(() => { mock.permission = 0; mock.profile = { age: 50 } }), fallback)
+assert.deepEqual(buildWith(() => { mock.permission = 0; mock.profile = { age: OLDER } }), fallback)
 assert.deepEqual(buildWith(() => { mock.profile = { get age() { throw new Error('no profile') } } }), fallback) // getProfile() throws
-// the running face colors with the profile zones: 150 bpm is red at 50, yellow at 34
+// the running face colors with the profile zones: the older red threshold is red
+// for the older user and not yet red at the default age
+const olderRed = expected(OLDER)[0]
+assert.ok(olderRed < fallback[0])
 mock.widgets.length = 0
-Object.assign(mock, { permission: 2, profile: { age: 50 } })
-readings.bpm = 150
+Object.assign(mock, { permission: 2, profile: { age: OLDER } })
+readings.bpm = olderRed
 face.build()
 assert.equal(face.ui.widgets.heartRate.color, COLORS.alert)
 face.onDestroy()
-mock.profile = { age: 34 }
+mock.profile = { age: Z.defaultAge }
 
 console.log('PASS: startup, centering, reserved widths, rollover, wake/resume catch-up, cleanup, hidden items, ghosts, value colors, age-based heart-rate zones.')
 console.log('Device rendering still requires real-watch checks. Custom AOD is not included.')

@@ -52,8 +52,8 @@ export const COLORS = {
   date: 0x00e90b,
   heartRate: 0x00d701,
   battery: 0x00d701,
-  warning: 0xffd60a, // yellow: battery below 60%, elevated heart rate
-  alert: 0xff3b30, // red: battery below 20%, high heart rate
+  warning: 0xffd60a, // yellow, see COLOR_RULES
+  alert: 0xff3b30, // red, see COLOR_RULES
 }
 
 export const FONT_SIZES = {
@@ -77,11 +77,11 @@ export const HEART_RATE_ZONES = {
   defaultAge: 34,
   minAge: 10,
   maxAge: 100,
-  warning: 0.70, // yellow from 70% of max
-  alert: 0.85, // red from 85% of max
+  warning: 0.70, // yellow from this share of max
+  alert: 0.85, // red from this share of max
 }
 
-// Heart-rate color rules for an age; for 34 (max 186): yellow >= 130, red >= 158.
+// Heart-rate color rules for an age (the preview shows the resulting bpm).
 export function heartRateRules(age) {
   const z = HEART_RATE_ZONES
   const valid = typeof age === 'number' && age >= z.minAge && age <= z.maxAge
@@ -101,7 +101,7 @@ export const COLOR_RULES = {
     value: 'battery',
     rules: [
       { below: 20, color: COLORS.alert },
-      { below: 60, color: COLORS.warning },
+      { below: 50, color: COLORS.warning },
     ],
   },
   // Built for `defaultAge`; index.js replaces the rules with the profile age.

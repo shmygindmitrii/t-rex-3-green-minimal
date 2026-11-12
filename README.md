@@ -6,10 +6,12 @@ Minimal watch face for Amazfit T-Rex 3 by **Dmitrii Shmygin**.
   the text, on a pure black `#000000` background.
 - All green: English weekday and `DD.MM` date above the time, such as `THU 12.11`,
   and a 24-hour time.
-- `HRT`: latest measured heart rate; `--` when unavailable. Turns yellow from 70%
-  and red from 85% of max heart rate (220 − age). The age comes from your Zepp
-  profile, with 34 as the fallback, which gives yellow from 130 and red from 158 bpm.
-- `BAT`: battery percentage. Turns yellow below 60% and red below 20%.
+- `HRT`: latest measured heart rate; `--` when unavailable.
+- `BAT`: battery percentage.
+- `HRT` and `BAT` turn yellow, then red, as the value gets worse. Battery
+  thresholds are in `COLOR_RULES`. Heart rate zones are a share of max heart rate
+  (220 − age, the age from your Zepp profile) and are set in `HEART_RATE_ZONES`.
+  The preview lists the resulting numbers.
 - Green hollow triangle selector icon. No images on the active face.
 
 ## Install or update

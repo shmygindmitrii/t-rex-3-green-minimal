@@ -87,6 +87,7 @@ const outside = (line, m) => m.items.filter(({ item, x, w }) => {
   return [x, x + w].some((px) => [cy - half, cy + half].some((py) =>
     Math.hypot(px - config.CX, py - config.CY) > radius))
 }).map(({ item }) => item.id)
+const colorName = (color) => Object.keys(config.COLORS).find((key) => config.COLORS[key] === color) || '#' + color.toString(16)
 const showMetrics = () => {
   document.querySelector('#metrics').textContent = config.LINES
     .filter((line) => line.show !== false)
@@ -97,8 +98,9 @@ const showMetrics = () => {
         (out.length ? `  ⚠ outside round screen: ${out.join(', ')}` : '')
     })
     .join('\n') + `\nscreen ${config.SCREEN.width}x${config.SCREEN.height}` +
-    `\nheart rate zones (profile age ${mock.profile.age}, ?age= to change): ` +
-    config.COLOR_RULES.heartRate.rules.map((r) => `>=${r.atLeast}`).reverse().join(' yellow, ') + ' red'
+    Object.entries(config.COLOR_RULES).map(([name, { rules }]) => `\n${name} colors: ` +
+      rules.map((r) => (r.below !== undefined ? `<${r.below}` : `>=${r.atLeast}`) + ' ' + colorName(r.color)).join(', ') +
+      (name === 'heartRate' ? `  (profile age ${mock.profile.age}, ?age= to change)` : '')).join('')
 }
 const apply = (name) => {
   Object.assign(mock.readings, samples[name])
