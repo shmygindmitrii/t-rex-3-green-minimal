@@ -2,7 +2,7 @@
 
 Watch face author: Dmitrii Shmygin.
 
-Icon: original green hollow triangle artwork for Green Minimal.
+Icons: original artwork for Green Minimal (green hollow triangle, heart, battery).
 
 DSEG7 and DSEG14: Copyright (c) 2017, keshikan, under the SIL Open Font License 1.1.
 See [DSEG-LICENSE.txt](assets/480x480-amazfit-t-rex-3/fonts/fonts-DSEG_v046/DSEG-LICENSE.txt).

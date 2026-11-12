@@ -1,18 +1,9 @@
-import { createWidget, widget, align, prop, text_style } from '@zos/ui'
+// Watch face lifecycle: reads sensors into `values` and hands them to the layout.
+// Layout, fonts and colors are in config.js.
+import { createWidget, widget } from '@zos/ui'
 import { Time, HeartRate, Battery, Screen } from '@zos/sensor'
-
-const CLOCK_FONT = 'fonts/fonts-DSEG_v046/DSEG7-Classic/DSEG7Classic-Bold.ttf'
-const HR_FONT = 'fonts/fonts-DSEG_v046/DSEG7-Classic/DSEG7Classic-Bold.ttf'
-const DATE_DDMM_FONT = 'fonts/fonts-DSEG_v046/DSEG7-Classic/DSEG7Classic-Bold.ttf'
-const DATE_WORD_FONT = 'fonts/fonts-DSEG_v046/DSEG14-Classic/DSEG14Classic-Regular.ttf'
-const BATTERY_FONT = 'fonts/fonts-DSEG_v046/DSEG7-Classic/DSEG7Classic-Bold.ttf'
-const BATTERY_PERCENT_FONT = 'fonts/fonts-DSEG_v046/DSEG14-Classic/DSEG14Classic-Bold.ttf'
-const GREEN = 0x75ff69
-const RED = 0xff4949
-const ORANGE = 0xffa044
-const BATTERY_GREEN = 0x6bde76
-const DAYS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']
-const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
+import { SCREEN, COLORS, LINES, DAYS, MONTHS, TEXT_BOX_SCALE } from './config.js'
+import { buildLines } from './layout.js'
 
 const pad = (value) => (value < 10 ? '0' + value : '' + value)
 
@@ -23,52 +14,43 @@ WatchFace({
     this.heartRate = new HeartRate()
     this.battery = new Battery()
     this.screen = new Screen()
+    this.values = {}
+
     createWidget(widget.FILL_RECT, {
-      x: 0, y: 0, w: 480, h: 480, color: 0x000000,
-    })
-    const label = (x, y, w, h, size, color, text, font) => createWidget(widget.TEXT, {
-      x, y, w, h, font,
-      text_size: size, color, text,
-      align_h: align.CENTER_H,
-      align_v: align.CENTER_V,
-      text_style: text_style.NONE,
+      x: 0, y: 0, w: SCREEN.width, h: SCREEN.height, color: COLORS.background,
     })
 
-    this.clock = label(32, 95, 416, 205, 115, GREEN, '', CLOCK_FONT)
-    this.weekday = label(64, 280, 118, 76, 48, ORANGE, '', DATE_WORD_FONT)
-    this.date = label(200, 280, 80, 76, 48, ORANGE, '', DATE_DDMM_FONT)
-    this.month = label(298, 280, 118, 76, 48, ORANGE, '', DATE_WORD_FONT)
-    this.heartText = label(80, 368, 128, 76, 44, RED, '--', HR_FONT)
-    this.batteryText = label(240, 368, 160, 76, 44, BATTERY_GREEN, '', BATTERY_FONT)
-    this.batteryPercent = label(364, 368, 36, 76, 44, BATTERY_GREEN, '%', BATTERY_PERCENT_FONT)
-
-    this.refreshBattery = () => {
-      if (this.destroyed) return
-      const value = '' + this.battery.getCurrent()
-      // Use DSEG14's percent glyph alongside the DSEG7 digits.
-      const width = Math.ceil(value.length * 0.816 * 44)
-      const x = Math.floor(316 - (width + 40) / 2)
-      this.batteryText.setProperty(prop.MORE, { x, w: width, text: value })
-      this.batteryPercent.setProperty(prop.MORE, { x: x + width + 4 })
+    // Each reader fills its part of `values`; render() pushes them to the widgets.
+    const readTime = () => {
+      const t = this.time
+      this.values.time = pad(t.getHours()) + ':' + pad(t.getMinutes())
+      this.values.weekday = DAYS[t.getDay() - 1]
+      this.values.day = pad(t.getDate())
+      this.values.month = MONTHS[t.getMonth() - 1]
     }
-
-    this.refreshHeart = () => {
-      if (this.destroyed) return
+    const readHeart = () => {
       const bpm = this.heartRate.getLast()
-      this.heartText.setProperty(prop.TEXT, bpm > 0 ? '' + bpm : '--')
+      this.values.heartRate = bpm > 0 ? '' + bpm : '--'
+    }
+    const readBattery = () => {
+      this.values.battery = '' + this.battery.getCurrent()
+    }
+    const render = () => this.ui.update(this.values)
+    const on = (read) => () => {
+      if (this.destroyed) return
+      read()
+      render()
     }
 
-    this.refresh = () => {
-      if (this.destroyed) return
-      const clock = pad(this.time.getHours()) + ':' + pad(this.time.getMinutes())
-      this.clock.setProperty(prop.TEXT, clock)
-      this.weekday.setProperty(prop.TEXT, DAYS[this.time.getDay() - 1])
-      this.date.setProperty(prop.TEXT, pad(this.time.getDate()))
-      this.month.setProperty(prop.TEXT, MONTHS[this.time.getMonth() - 1])
-      this.refreshHeart()
-      this.refreshBattery()
-    }
-    this.refresh()
+    readTime()
+    readHeart()
+    readBattery()
+    this.ui = buildLines(LINES, SCREEN, this.values, TEXT_BOX_SCALE)
+
+    this.refreshHeart = on(readHeart)
+    this.refreshBattery = on(readBattery)
+    this.refresh = on(() => { readTime(); readHeart(); readBattery() })
+
     this.time.onPerMinute(this.refresh)
     // Minute events can be missed while the face is suspended.
     this.onScreenChange = (status) => {

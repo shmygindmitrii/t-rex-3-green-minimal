@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Green Minimal Preview</title>
+<script type="importmap">
+{ "imports": {
+  "@zos/ui": "/preview/zos-browser.js",
+  "@zos/sensor": "/preview/zos-browser.js",
+  "@zos/device": "/preview/zos-browser.js"
+} }
+</script>
+<style>
+:root { color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; display: grid; place-content: center; gap: 20px; padding: 24px 16px; background: #171a18; color: #ddd; font: 14px system-ui, sans-serif; }
+.stage { position: relative; justify-self: center; }
+#face { position: relative; overflow: hidden; border-radius: 50%; box-shadow: 0 0 0 2px #313831; }
+.widget { position: absolute; display: flex; line-height: 1; white-space: pre; overflow: hidden; }
+img.widget { object-fit: none; }
+.guides .widget-text, .guides .widget-img { outline: 1px dashed #4a6dff88; }
+.guide { position: absolute; pointer-events: none; display: none; }
+.guides .guide { display: block; }
+.guide.v { top: 0; bottom: 0; width: 0; border-left: 1px dashed #ff40ff99; }
+.guide.h { left: 0; right: 0; height: 0; border-top: 1px dashed #40ffff66; }
+.controls { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; align-items: center; }
+select, label { background: #252c26; color: #eee; border: 1px solid #526353; border-radius: 5px; padding: 6px 8px; }
+#metrics { font: 12px ui-monospace, monospace; color: #9fb39f; text-align: center; white-space: pre; margin: 0; }
+@media (max-width: 520px) { .stage { zoom: .7; } }
+</style>
+<div class="stage" id="stage"><div id="face"></div></div>
+<div class="controls">
+  <select id="sample" aria-label="Sample values">
+    <option value="normal">Normal</option>
+    <option value="wide">Long values</option>
+    <option value="missing">No heart rate</option>
+    <option value="midnight">New year / midnight</option>
+  </select>
+  <label><input type="checkbox" id="guides"> Guides</label>
+  <label><input type="checkbox" id="icons"> Show icons</label>
+</div>
+<pre id="metrics"></pre>
+<script type="module">
+import { mock } from '/preview/zos-browser.js'
+const config = await import('/watchface/config.js')
+const params = new URLSearchParams(location.search)
+
+// Optional: force HR/battery icons on without editing config.js.
+if (params.get('icons') === '1') {
+  config.LINES.forEach((line) => line.items.forEach((item) => { if (item.type === 'image') item.show = true }))
+}
+
+const face = document.querySelector('#face')
+face.style.width = config.SCREEN.width + 'px'
+face.style.height = config.SCREEN.height + 'px'
+
+let definition
+globalThis.WatchFace = (value) => { definition = value }
+await import('/watchface/index.js')
+definition.build()
+
+// Guides: screen center cross and each line's center.
+const guide = (cls, prop, value) => {
+  const el = document.createElement('div')
+  el.className = 'guide ' + cls
+  el.style[prop] = value + 'px'
+  face.append(el)
+}
+guide('v', 'left', config.CX)
+guide('h', 'top', config.CY)
+config.LINES.forEach((line) => guide('h', 'top', line.y))
+
+const samples = {
+  normal: { hour: 10, minute: 9, day: 4, date: 12, month: 11, bpm: 72, battery: 82 },
+  wide: { hour: 23, minute: 59, day: 3, date: 28, month: 8, bpm: 199, battery: 100 },
+  missing: { hour: 8, minute: 8, day: 4, date: 8, month: 8, bpm: 0, battery: 1 },
+  midnight: { hour: 0, minute: 0, day: 5, date: 1, month: 1, bpm: 60, battery: 99 },
+}
+// Round display: report items whose glyph box corners fall outside the circle.
+const radius = Math.min(config.SCREEN.width, config.SCREEN.height) / 2
+const outside = (line, m) => m.items.filter(({ item, x, w }) => {
+  const half = (item.type === 'image' ? item.h : item.size) / 2
+  const cy = line.y + (item.dy || 0)
+  return [x, x + w].some((px) => [cy - half, cy + half].some((py) =>
+    Math.hypot(px - config.CX, py - config.CY) > radius))
+}).map(({ item }) => item.id)
+const showMetrics = () => {
+  document.querySelector('#metrics').textContent = config.LINES
+    .filter((line) => line.show !== false)
+    .map((line) => {
+      const m = definition.ui.measure(line.id)
+      const out = outside(line, m)
+      return `${line.id.padEnd(6)} y=${line.y}  width=${m.width.toFixed(1)}  x=${m.x}..${Math.round(m.x + m.width)}` +
+        (out.length ? `  ⚠ outside round screen: ${out.join(', ')}` : '')
+    })
+    .join('\n') + `\nscreen ${config.SCREEN.width}x${config.SCREEN.height}`
+}
+const apply = (name) => {
+  Object.assign(mock.readings, samples[name])
+  mock.listeners.minute()
+  showMetrics()
+}
+
+const sample = document.querySelector('#sample')
+const guides = document.querySelector('#guides')
+const icons = document.querySelector('#icons')
+sample.value = samples[params.get('sample')] ? params.get('sample') : 'normal'
+guides.checked = params.get('guides') === '1'
+icons.checked = params.get('icons') === '1'
+face.classList.toggle('guides', guides.checked)
+apply(sample.value)
+
+const setParam = (key, value) => {
+  const url = new URL(location.href)
+  url.searchParams.set(key, value)
+  history.replaceState(null, '', url)
+}
+sample.addEventListener('change', () => { apply(sample.value); setParam('sample', sample.value) })
+guides.addEventListener('change', () => { face.classList.toggle('guides', guides.checked); setParam('guides', guides.checked ? 1 : 0) })
+icons.addEventListener('change', () => { setParam('icons', icons.checked ? 1 : 0); location.reload() })
+</script>
+</html>

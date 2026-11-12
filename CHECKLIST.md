@@ -4,10 +4,13 @@ Author: Dmitrii Shmygin. Target: Amazfit T-Rex 3, 480 x 480.
 
 ## Before installing
 
-- Run `node check.cjs` for mock runtime checks of data updates and lifecycle cleanup.
+- Run `node test/check.mjs` for mock runtime checks of data updates, line centering
+  and lifecycle cleanup.
 - Run `zeus.cmd build` to check bundling, fonts, images and compilation.
-- Open `design.html` to review the layout. Its sample controls exercise long values.
-- This browser preview approximates text layout; the watch remains the final check.
+- Run `node preview/server.mjs` and open http://localhost:8080/ to review the layout.
+  Its sample controls exercise long values. There must be no "outside round screen"
+  warnings.
+- The browser preview approximates text rendering; the watch remains the final check.
 
 ## On the watch
 
@@ -39,7 +42,8 @@ checked separately from the build and HTML preview.
 
 ## Artwork and credits
 
-The green hollow triangle is original SVG artwork in `icon.svg`; `make-icon.cjs`
-generates its 324 x 324 PNG for the watch selector. The triangle is not drawn on
-the active watch face. Font attribution and the link to the bundled DSEG license
+The green hollow triangle (`art/selector-icon.svg`) and the optional heart and battery
+icons (`art/heart.svg`, `art/battery.svg`) are original SVG artwork. `node tools/make-icons.cjs`
+renders them to PNG: 324 x 324 for the selector and 36 x 36 for the icons. The triangle is
+not drawn on the active watch face. Font attribution and the link to the bundled DSEG license
 are in `CREDITS.md`.
