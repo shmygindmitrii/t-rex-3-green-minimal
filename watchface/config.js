@@ -56,6 +56,20 @@ export const COLORS = {
   alert: 0xff3b30, // red: battery below 20%, high heart rate
 }
 
+export const FONT_SIZES = {
+  time: 132,
+  date: 50,
+  heartRate: 44,
+  battery: 44,
+}
+
+export const LINE_OFFSETS_Y = {
+  time: 0, // center
+  date: -120, // top
+  heartRate: 120,
+  battery: 175,
+}
+
 // Heart-rate zones as a share of max heart rate, estimated as 220 - age. The age
 // comes from the Zepp profile when the face starts; `defaultAge` is used when the
 // profile has no usable age (outside `minAge`..`maxAge`).
@@ -101,7 +115,6 @@ export const COLOR_RULES = {
 // `node tools/font-metrics.cjs` so its widths can be measured.
 export const FONTS = {
   DSEG7_BOLD: 'fonts/fonts-DSEG_v046/DSEG7-Classic/DSEG7Classic-Bold.ttf',
-  DSEG14_REGULAR: 'fonts/fonts-DSEG_v046/DSEG14-Classic/DSEG14Classic-Regular.ttf',
   DSEG14_BOLD: 'fonts/fonts-DSEG_v046/DSEG14-Classic/DSEG14Classic-Bold.ttf',
 }
 
@@ -120,7 +133,6 @@ export const GHOST = {
   blank: '!', // DSEG: blank character as wide as a digit
   chars: {
     [FONTS.DSEG7_BOLD]: '8',
-    [FONTS.DSEG14_REGULAR]: '~',
     [FONTS.DSEG14_BOLD]: '~',
   },
 }
@@ -130,36 +142,36 @@ export const DAYS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']
 export const LINES = [
   {
     id: 'date',
-    y: CY - 120,
+    y: CY + LINE_OFFSETS_Y.date,
     gap: 18,
     items: [
-      { id: 'weekday', value: 'weekday', font: FONTS.DSEG14_REGULAR, size: 48, color: COLORS.date, reserve: 'WWW', ghost: true },
-      { id: 'daymonth', value: 'ddmm', font: FONTS.DSEG7_BOLD, size: 48, color: COLORS.date,  ghost: true },
+      { id: 'weekday', value: 'weekday', font: FONTS.DSEG14_BOLD, size: FONT_SIZES.date, color: COLORS.date, reserve: 'WWW', ghost: true },
+      { id: 'daymonth', value: 'ddmm', font: FONTS.DSEG7_BOLD, size: FONT_SIZES.date, color: COLORS.date,  ghost: true },
     ],
   },
   {
     id: 'time',
-    y: CY,
+    y: CY + LINE_OFFSETS_Y.time,
     items: [
-      { id: 'clock', value: 'time', font: FONTS.DSEG7_BOLD, size: 132, color: COLORS.time, ghost: true },
+      { id: 'clock', value: 'time', font: FONTS.DSEG7_BOLD, size: FONT_SIZES.time, color: COLORS.time, ghost: true },
     ],
   },
   {
     id: 'stats-hrt',
-    y: CY + 120,
+    y: CY + LINE_OFFSETS_Y.heartRate,
     gap: 8,
     items: [
-      { id: 'heartRatePrefix', text: 'HRT', font: FONTS.DSEG14_REGULAR, size: 40, color: COLORS.heartRate, colorBy: COLOR_RULES.heartRate, ghost: true },
-      { id: 'heartRate', value: 'heartRate', font: FONTS.DSEG7_BOLD, size: 40, color: COLORS.heartRate, colorBy: COLOR_RULES.heartRate, reserve: '000', ghost: true },
+      { id: 'heartRatePrefix', text: '!HR', font: FONTS.DSEG14_BOLD, size: FONT_SIZES.heartRate, color: COLORS.heartRate, colorBy: COLOR_RULES.heartRate, ghost: true },
+      { id: 'heartRate', value: 'heartRate', font: FONTS.DSEG7_BOLD, size: FONT_SIZES.heartRate, color: COLORS.heartRate, colorBy: COLOR_RULES.heartRate, reserve: '000', ghost: true },
     ],
   },
   {
     id: 'stats-bat',
-    y: CY + 168,
+    y: CY + LINE_OFFSETS_Y.battery,
     gap: 8,
     items: [
-      { id: 'batteryPrefix', text: 'BAT', font: FONTS.DSEG14_REGULAR, size: 40, color: COLORS.battery, colorBy: COLOR_RULES.battery, ghost: true },
-      { id: 'battery', value: 'battery', font: FONTS.DSEG7_BOLD, size: 40, color: COLORS.battery, colorBy: COLOR_RULES.battery, reserve: '000', align: 'right', ghost: true },
+      { id: 'batteryPrefix', text: 'BAT', font: FONTS.DSEG14_BOLD, size: FONT_SIZES.battery, color: COLORS.battery, colorBy: COLOR_RULES.battery, ghost: true },
+      { id: 'battery', value: 'battery', font: FONTS.DSEG7_BOLD, size: FONT_SIZES.battery, color: COLORS.battery, colorBy: COLOR_RULES.battery, reserve: '000', align: 'right', ghost: true },
     ],
   },
 ]

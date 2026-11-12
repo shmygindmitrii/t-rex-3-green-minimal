@@ -125,9 +125,9 @@ const ghostLines = [
     { id: 'gClock', value: 'time', font: FONTS.DSEG7_BOLD, size: 100, color: 0x75ff69 },
   ] },
   { id: 'gStats', y: 300, gap: 8, ghost: true, ghostColor: 0x222222, items: [
-    { id: 'gLabel', text: 'HRT', font: FONTS.DSEG14_REGULAR, size: 34, color: 0xff4949 },
+    { id: 'gLabel', text: 'HRT', font: FONTS.DSEG14_BOLD, size: 34, color: 0xff4949 },
     { id: 'gHeart', value: 'heartRate', font: FONTS.DSEG7_BOLD, size: 34, color: 0xff4949, reserve: '000' },
-    { id: 'gNoGhost', text: 'X', font: FONTS.DSEG14_REGULAR, size: 34, color: 0xff4949, ghost: false },
+    { id: 'gNoGhost', text: 'X', font: FONTS.DSEG14_BOLD, size: 34, color: 0xff4949, ghost: false },
     { id: 'gCustom', value: 'battery', font: FONTS.DSEG7_BOLD, size: 34, color: 0x6bde76, ghost: '888', align: 'left', ghostColor: 0x010101 },
   ] },
   { id: 'gOff', y: 400, items: [
@@ -138,7 +138,7 @@ const before2 = mock.widgets.length
 const g = buildLines(ghostLines, SCREEN, { time: '10:09', heartRate: '72', battery: '5' })
 // ghost text: full-width chars -> all-on char, ':' kept; reserve sets the cell count
 assert.equal(g.ghosts.gClock.text, `${G(FONTS.DSEG7_BOLD).repeat(2)}:${G(FONTS.DSEG7_BOLD).repeat(2)}`)
-assert.equal(g.ghosts.gLabel.text, G(FONTS.DSEG14_REGULAR).repeat(3))
+assert.equal(g.ghosts.gLabel.text, G(FONTS.DSEG14_BOLD).repeat(3))
 assert.equal(g.ghosts.gHeart.text, '888')
 assert.equal(g.ghosts.gCustom.text, '888')
 assert.equal(g.ghosts.gNoGhost, undefined)

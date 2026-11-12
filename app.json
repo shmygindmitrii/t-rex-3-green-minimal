@@ -5,8 +5,8 @@
     "appName": "Green Minimal",
     "appType": "watchface",
     "version": {
-      "code": 16,
-      "name": "1.6.0"
+      "code": 17,
+      "name": "1.7.0"
     },
     "icon": "icon.png",
     "vender": "Dmitrii Shmygin",
