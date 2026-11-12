@@ -6,7 +6,9 @@
 <script type="importmap">
 { "imports": {
   "@zos/ui": "/preview/zos-browser.js",
-  "@zos/sensor": "/preview/zos-browser.js"
+  "@zos/sensor": "/preview/zos-browser.js",
+  "@zos/app": "/preview/zos-browser.js",
+  "@zos/user": "/preview/zos-browser.js"
 } }
 </script>
 <style>
@@ -94,7 +96,9 @@ const showMetrics = () => {
       return `${line.id.padEnd(6)} y=${line.y}  width=${m.width.toFixed(1)}  x=${m.x}..${Math.round(m.x + m.width)}` +
         (out.length ? `  ⚠ outside round screen: ${out.join(', ')}` : '')
     })
-    .join('\n') + `\nscreen ${config.SCREEN.width}x${config.SCREEN.height}`
+    .join('\n') + `\nscreen ${config.SCREEN.width}x${config.SCREEN.height}` +
+    `\nheart rate zones (profile age ${mock.profile.age}, ?age= to change): ` +
+    config.COLOR_RULES.heartRate.rules.map((r) => `>=${r.atLeast}`).reverse().join(' yellow, ') + ' red'
 }
 const apply = (name) => {
   Object.assign(mock.readings, samples[name])

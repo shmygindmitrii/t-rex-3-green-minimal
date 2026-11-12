@@ -9,7 +9,7 @@ const { readings, listeners } = mock
 let face
 globalThis.WatchFace = (definition) => { face = definition }
 
-const { LINES, SCREEN, CX, FONTS, GHOST, COLORS, COLOR_RULES } = await import('../watchface/config.js')
+const { LINES, SCREEN, CX, FONTS, GHOST, COLORS, COLOR_RULES, HEART_RATE_ZONES, heartRateRules } = await import('../watchface/config.js')
 const { buildLines, measureLine, textWidth, dim, itemColor } = await import('../watchface/layout.js')
 await import('../watchface/index.js')
 
@@ -226,5 +226,38 @@ assert.equal(fw.battery.color, COLORS.battery)
 assert.equal(fw.batteryPrefix.color, COLORS.battery)
 face.onDestroy()
 
-console.log('PASS: startup, centering, reserved widths, rollover, wake/resume catch-up, cleanup, hidden items, ghosts, value colors.')
+// --- heart-rate zones follow the profile age: max = 220 - age
+const zones = (rules) => rules.map((r) => r.atLeast) // [red from, yellow from]
+assert.deepEqual(zones(heartRateRules(34)), [158, 130])
+assert.deepEqual(zones(heartRateRules(50)), [145, 119])
+assert.deepEqual(zones(heartRateRules(20)), [170, 140])
+const fallback = zones(heartRateRules(HEART_RATE_ZONES.defaultAge))
+for (const bad of [undefined, null, 0, 5, 150, NaN, '40']) {
+  assert.deepEqual(zones(heartRateRules(bad)), fallback, 'fallback for age ' + bad)
+}
+// the face reads the age at build: granted profile, missing age, no permission, throwing API
+const buildWith = (setup) => {
+  mock.widgets.length = 0
+  Object.assign(mock, { permission: 2, profile: { age: 34 } })
+  setup()
+  face.build()
+  const result = zones(COLOR_RULES.heartRate.rules)
+  face.onDestroy()
+  return result
+}
+assert.deepEqual(buildWith(() => { mock.profile = { age: 50 } }), [145, 119])
+assert.deepEqual(buildWith(() => { mock.profile = {} }), fallback)
+assert.deepEqual(buildWith(() => { mock.profile = { age: 0 } }), fallback)
+assert.deepEqual(buildWith(() => { mock.permission = 0; mock.profile = { age: 50 } }), fallback)
+assert.deepEqual(buildWith(() => { mock.profile = { get age() { throw new Error('no profile') } } }), fallback) // getProfile() throws
+// the running face colors with the profile zones: 150 bpm is red at 50, yellow at 34
+mock.widgets.length = 0
+Object.assign(mock, { permission: 2, profile: { age: 50 } })
+readings.bpm = 150
+face.build()
+assert.equal(face.ui.widgets.heartRate.color, COLORS.alert)
+face.onDestroy()
+mock.profile = { age: 34 }
+
+console.log('PASS: startup, centering, reserved widths, rollover, wake/resume catch-up, cleanup, hidden items, ghosts, value colors, age-based heart-rate zones.')
 console.log('Device rendering still requires real-watch checks. Custom AOD is not included.')

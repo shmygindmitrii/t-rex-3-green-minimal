@@ -1,10 +1,13 @@
 // Browser stand-ins for the Zepp OS APIs, rendering widgets as absolutely
 // positioned elements inside #face. Mapped to '@zos/*' by the import map in index.html.
 const ASSETS = '/assets/480x480-amazfit-t-rex-3/'
+const params = new URLSearchParams(location.search)
 
 export const mock = {
   readings: { hour: 10, minute: 9, day: 4, date: 12, month: 11, bpm: 72, battery: 82 },
   listeners: {},
+  permission: 2, // queryPermission status: 2 = granted
+  profile: { age: params.has('age') ? +params.get('age') : 34 }, // ?age=50 in the page URL
   widgets: [],
 }
 
@@ -63,6 +66,10 @@ export function createWidget(type, options) {
   mock.widgets.push(instance)
   return instance
 }
+
+// @zos/app and @zos/user: profile permission and age
+export function queryPermission({ permissions }) { return permissions.map(() => mock.permission) }
+export function getProfile() { return { ...mock.profile } }
 
 const { readings: r, listeners: l } = mock
 export class Time {

@@ -5,14 +5,14 @@
     "appName": "Green Minimal",
     "appType": "watchface",
     "version": {
-      "code": 15,
-      "name": "1.5.0"
+      "code": 16,
+      "name": "1.6.0"
     },
     "icon": "icon.png",
     "vender": "Dmitrii Shmygin",
     "description": "Minimal green clock with heart rate, date, weekday and battery percentage on pure black"
   },
-  "permissions": ["data:user.hd.heart_rate"],
+  "permissions": ["data:user.hd.heart_rate", "data:user.info"],
   "runtime": {
     "apiVersion": {
       "compatible": "3.0.0",

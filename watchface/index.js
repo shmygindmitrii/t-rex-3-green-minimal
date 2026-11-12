@@ -2,10 +2,26 @@
 // Layout, fonts and colors are in config.js.
 import { createWidget, widget } from '@zos/ui'
 import { Time, HeartRate, Battery, Screen } from '@zos/sensor'
-import { SCREEN, COLORS, LINES, DAYS } from './config.js'
+import { queryPermission } from '@zos/app'
+import { getProfile } from '@zos/user'
+import { SCREEN, COLORS, LINES, DAYS, COLOR_RULES, heartRateRules } from './config.js'
 import { buildLines } from './layout.js'
 
 const pad = (value) => (value < 10 ? '0' + value : '' + value)
+
+// Age from the Zepp profile, or undefined. Only checks the permission (granted
+// silently at install, confirmed on the watch); never requests it, so no popup.
+const PROFILE_PERMISSION = 'data:user.info'
+const PERMISSION_GRANTED = 2
+const readAge = () => {
+  try {
+    const [status] = queryPermission({ permissions: [PROFILE_PERMISSION] })
+    if (status !== PERMISSION_GRANTED) return undefined
+    return getProfile().age
+  } catch (e) {
+    return undefined
+  }
+}
 
 WatchFace({
   build() {
@@ -15,6 +31,8 @@ WatchFace({
     this.battery = new Battery()
     this.screen = new Screen()
     this.values = {}
+    // Heart-rate zones for the user's age; falls back to the default age.
+    COLOR_RULES.heartRate.rules = heartRateRules(readAge())
 
     createWidget(widget.FILL_RECT, {
       x: 0, y: 0, w: SCREEN.width, h: SCREEN.height, color: COLORS.background,

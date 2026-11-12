@@ -3,6 +3,8 @@
 export const mock = {
   readings: { hour: 10, minute: 9, day: 4, date: 12, month: 11, bpm: 72, battery: 82 },
   listeners: {},
+  permission: 2, // queryPermission status: 2 = granted
+  profile: { age: 34 },
   widgets: [],
 }
 
@@ -24,6 +26,10 @@ export function createWidget(type, options) {
   mock.widgets.push(instance)
   return instance
 }
+
+// @zos/app and @zos/user: profile permission and age
+export function queryPermission({ permissions }) { return permissions.map(() => mock.permission) }
+export function getProfile() { return { ...mock.profile } }
 
 const { readings: r, listeners: l } = mock
 const off = (name, callback) => {

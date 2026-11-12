@@ -56,6 +56,28 @@ export const COLORS = {
   alert: 0xff3b30, // red: battery below 20%, high heart rate
 }
 
+// Heart-rate zones as a share of max heart rate, estimated as 220 - age. The age
+// comes from the Zepp profile when the face starts; `defaultAge` is used when the
+// profile has no usable age (outside `minAge`..`maxAge`).
+export const HEART_RATE_ZONES = {
+  defaultAge: 34,
+  minAge: 10,
+  maxAge: 100,
+  warning: 0.70, // yellow from 70% of max
+  alert: 0.85, // red from 85% of max
+}
+
+// Heart-rate color rules for an age; for 34 (max 186): yellow >= 130, red >= 158.
+export function heartRateRules(age) {
+  const z = HEART_RATE_ZONES
+  const valid = typeof age === 'number' && age >= z.minAge && age <= z.maxAge
+  const max = 220 - (valid ? age : z.defaultAge)
+  return [
+    { atLeast: Math.round(max * z.alert), color: COLORS.alert },
+    { atLeast: Math.round(max * z.warning), color: COLORS.warning },
+  ]
+}
+
 // Value-dependent colors. An item with `colorBy` takes the color of the first
 // rule that matches the numeric data value, otherwise its own `color`.
 // Rule conditions: `below: n` (value < n) or `atLeast: n` (value >= n).
@@ -68,14 +90,10 @@ export const COLOR_RULES = {
       { below: 60, color: COLORS.warning },
     ],
   },
-  // Zones for a ~34-year-old: max heart rate ~ 220 - 34 = 186 bpm.
-  // Yellow from ~70% of max (130 bpm), red from ~85% of max (158 bpm).
+  // Built for `defaultAge`; index.js replaces the rules with the profile age.
   heartRate: {
     value: 'heartRate',
-    rules: [
-      { atLeast: 158, color: COLORS.alert },
-      { atLeast: 130, color: COLORS.warning },
-    ],
+    rules: heartRateRules(HEART_RATE_ZONES.defaultAge),
   },
 }
 

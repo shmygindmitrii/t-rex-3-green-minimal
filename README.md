@@ -6,8 +6,9 @@ Minimal watch face for Amazfit T-Rex 3 by **Dmitrii Shmygin**.
   the text, on a pure black `#000000` background.
 - All green: English weekday and `DD.MM` date above the time, such as `THU 12.11`,
   and a 24-hour time.
-- `HRT`: latest measured heart rate; `--` when unavailable. Turns yellow from
-  130 bpm and red from 158 bpm (zones for a ~34-year-old, max ~186).
+- `HRT`: latest measured heart rate; `--` when unavailable. Turns yellow from 70%
+  and red from 85% of max heart rate (220 − age). The age comes from your Zepp
+  profile, with 34 as the fallback, which gives yellow from 130 and red from 158 bpm.
 - `BAT`: battery percentage. Turns yellow below 60% and red below 20%.
 - Green hollow triangle selector icon. No images on the active face.
 
@@ -54,7 +55,8 @@ The face is a list of horizontal lines:
   segment characters are in `GHOST`.
 - `colorBy: COLOR_RULES.battery` makes an item's color depend on a value. The
   thresholds and colors are in `COLOR_RULES` and `COLORS`. Labels such as `BAT`
-  use it too, so they change color with their value.
+  use it too, so they change color with their value. The heart rate zones are in
+  `HEART_RATE_ZONES`; preview another age with `?age=50`.
 
 Preview the real face code in a browser:
 
@@ -85,7 +87,9 @@ Designed for Amazfit T-Rex 3 at 480 x 480. Custom always-on display is not inclu
 See [CHECKLIST.md](CHECKLIST.md) for build and device checks.
 
 Heart rate follows the watch's latest measurement and does not request continuous
-measurement. API 3.0 or later is required. Time refreshes on screen wake, return
+measurement. The age is read from the Zepp profile (`data:user.info`); the face
+only checks that permission and never asks for it, so there is no prompt.
+API 3.0 or later is required. Time refreshes on screen wake, return
 to the face and minute changes. No phone-side service or network access
 is used by the face.
 
