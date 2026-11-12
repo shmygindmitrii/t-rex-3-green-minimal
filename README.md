@@ -2,12 +2,13 @@
 
 Minimal watch face for Amazfit T-Rex 3 by **Dmitrii Shmygin**.
 
-- Green 24-hour time in DSEG7 Classic Bold, with DSEG7 numeric readings and DSEG14 weekdays.
-- Latest measured heart rate in red; `--` when unavailable.
-- Orange English weekday and date in `DD MMM` format, such as `11 NOV`.
-- Green battery percentage and a pure black `#000000` background.
-- Green hollow triangle selector icon. Optional heart rate and battery icons are
-  included but switched off by default.
+- Old-LCD look: DSEG7/DSEG14 segment fonts with dim unlit "ghost" segments behind
+  the text, on a pure black `#000000` background.
+- Orange English weekday and `DD.MM` date above the time, such as `THU 12.11`.
+- Green 24-hour time.
+- `HRT`: latest measured heart rate in red; `--` when unavailable.
+- `BAT`: battery percentage in green.
+- Green hollow triangle selector icon. No images on the active face.
 
 ## Install or update
 
@@ -46,8 +47,10 @@ The face is a list of horizontal lines:
   and color the same way.
 - `reserve: '000'` gives an item a fixed width, so the line doesn't shift when a
   value gets shorter. `align` places the text inside that width.
-- Heart rate and battery icons are image items with `show: false`. Set
-  `show: true` to turn them on.
+- For an old-LCD look, add `ghost: true` to a line. Unlit segments are drawn
+  behind its text, for example a dim `88:88` behind `10:09`. `ghost: false` on an
+  item excludes it, and `ghostColor` sets the color. The default color and the
+  segment characters are in `GHOST`.
 
 Preview the real face code in a browser:
 
@@ -57,20 +60,20 @@ node preview/server.mjs
 
 Then open http://localhost:8080/. The page has sample values, including long
 values and missing heart rate. `Guides` shows the center lines and widget boxes.
-`Show icons` turns on the optional icons. Below the face, each line's width and
+Below the face, each line's width and
 position is listed, with a warning when an item goes outside the round screen.
 The browser renders text slightly differently, so check final rendering on the
 watch.
 
-### Fonts and icons
+### Fonts and the package icon
 
 - **New font:** put the TTF under `assets/480x480-amazfit-t-rex-3/fonts/` and add
   it to `FONTS`. Then run `node tools/font-metrics.cjs`, which regenerates
   `watchface/font-metrics.js` so the new font can be measured.
-- **Icons:** the editable sources are SVG files in `art/`, with the color set in
-  the SVG. `node tools/make-icons.cjs` renders them to PNG under `assets/` using
-  Sharp from the global Zeus install in `%APPDATA%/npm`. The watch draws images at
-  their native size, so the `w`/`h` in `config.js` must match the SVG size.
+- **Package icon:** `art/selector-icon.svg` is the editable source of the selector
+  thumbnail. `node tools/make-icon.cjs` renders it to
+  `assets/480x480-amazfit-t-rex-3/icon.png` (324 x 324) using Sharp from the global
+  Zeus install in `%APPDATA%/npm`.
 
 ## Compatibility
 

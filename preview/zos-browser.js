@@ -10,7 +10,7 @@ export const mock = {
   widgets: [],
 }
 
-export const widget = { TEXT: 'TEXT', IMG: 'IMG', FILL_RECT: 'FILL_RECT', WIDGET_DELEGATE: 'WIDGET_DELEGATE' }
+export const widget = { TEXT: 'TEXT', FILL_RECT: 'FILL_RECT', WIDGET_DELEGATE: 'WIDGET_DELEGATE' }
 export const align = { LEFT: 'flex-start', RIGHT: 'flex-end', CENTER_H: 'center', TOP: 'flex-start', BOTTOM: 'flex-end', CENTER_V: 'center' }
 export const prop = { TEXT: 'TEXT', MORE: 'MORE' }
 export const text_style = { NONE: 'NONE', WRAP: 'WRAP', ELLIPSIS: 'ELLIPSIS' }
@@ -31,7 +31,6 @@ const hex = (color) => '#' + (color >>> 0).toString(16).padStart(6, '0')
 function paint(el, type, o) {
   Object.assign(el.style, { left: o.x + 'px', top: o.y + 'px', width: o.w + 'px', height: o.h + 'px' })
   if (type === widget.FILL_RECT) el.style.background = hex(o.color)
-  if (type === widget.IMG) el.src = ASSETS + o.src
   if (type === widget.TEXT) {
     Object.assign(el.style, {
       color: hex(o.color),
@@ -49,7 +48,7 @@ export function createWidget(type, options) {
     mock.listeners.resume = options.resume_call
     return {}
   }
-  const el = document.createElement(type === widget.IMG ? 'img' : 'div')
+  const el = document.createElement('div')
   el.className = 'widget widget-' + type.toLowerCase()
   const state = { ...options }
   paint(el, type, state)

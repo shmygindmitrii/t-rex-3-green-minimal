@@ -2,6 +2,7 @@
 // Positions are never hardcoded; they are computed from config.js on every update.
 import { createWidget, widget, align, prop, text_style } from '@zos/ui'
 import { FONT_METRICS } from './font-metrics.js'
+import { TEXT_BOX_SCALE, GHOST } from './config.js'
 
 const H_ALIGN = { left: align.LEFT, center: align.CENTER_H, right: align.RIGHT }
 
@@ -17,7 +18,6 @@ export function textWidth(text, font, size) {
 }
 
 const visible = (entry) => entry.show !== false
-const isImage = (item) => item.type === 'image'
 
 function itemText(item, values) {
   if (item.text !== undefined) return '' + item.text
@@ -25,19 +25,53 @@ function itemText(item, values) {
   return value === undefined || value === null ? '' : '' + value
 }
 
-function itemWidth(item, text) {
-  if (isImage(item)) return item.w
-  const reserved = item.reserve ? textWidth(item.reserve, item.font, item.size) : 0
-  return Math.ceil(Math.max(textWidth(text, item.font, item.size), reserved))
+// Dim a 0xRRGGBB color, as an unlit segment on a black background.
+export function dim(color, factor) {
+  const channel = (shift) => Math.round(((color >> shift) & 0xff) * factor) << shift
+  return channel(16) | channel(8) | channel(0)
 }
 
-function itemBox(item, line, scale) {
-  const h = isImage(item) ? item.h : Math.round(item.size * scale)
+// Ghost text for an item, or null when the item has no ghost.
+// `text` is the current (unpadded) value; the ghost covers it and the reserve.
+export function ghostText(item, line, text) {
+  const setting = item.ghost !== undefined ? item.ghost : line.ghost
+  if (!setting) return null
+  if (typeof setting === 'string') return setting
+  const on = GHOST.chars[item.font]
+  if (!on) return null
+  const reserve = item.reserve || ''
+  const source = textWidth(reserve, item.font, 1) >= textWidth(text, item.font, 1) ? reserve : text
+  const cell = textWidth(on, item.font, 1)
+  let ghost = ''
+  for (const ch of source) ghost += textWidth(ch, item.font, 1) === cell ? on : ch
+  return ghost
+}
+
+// Pad `text` with blank cells until it is as wide as the ghost, so each digit
+// lands on a ghost cell. Pads on the left (LCD style) unless align is 'left'.
+function padToGhost(text, ghost, item) {
+  if (!GHOST.chars[item.font]) return text
+  const target = textWidth(ghost, item.font, 1) - 1e-6
+  let padded = text
+  for (let i = 0; i < 32 && textWidth(padded, item.font, 1) < target; i++) {
+    padded = item.align === 'left' ? padded + GHOST.blank : GHOST.blank + padded
+  }
+  return padded
+}
+
+function itemWidth(item, text, ghost) {
+  const reserved = item.reserve ? textWidth(item.reserve, item.font, item.size) : 0
+  const ghostWidth = ghost ? textWidth(ghost, item.font, item.size) : 0
+  return Math.ceil(Math.max(textWidth(text, item.font, item.size), reserved, ghostWidth))
+}
+
+function itemBox(item, line) {
+  const h = Math.round(item.size * TEXT_BOX_SCALE)
   return { y: Math.round(line.y - h / 2 + (item.dy || 0)), h }
 }
 
 // Horizontal placement of one line for the given values.
-// Returns { width, x, items: [{ item, text, x, w }] }, hidden items excluded.
+// Returns { width, x, items: [{ item, text, ghost, x, w }] }, hidden items excluded.
 export function measureLine(line, values, screenWidth) {
   const placed = []
   let width = 0
@@ -50,9 +84,11 @@ export function measureLine(line, values, screenWidth) {
     }
     if (placed.length) width += Math.max(pendingGap, gap)
     pendingGap = 0
-    const text = isImage(item) ? '' : itemText(item, values)
-    const w = itemWidth(item, text)
-    placed.push({ item, text, x: width, w })
+    let text = itemText(item, values)
+    const ghost = ghostText(item, line, text)
+    if (ghost) text = padToGhost(text, ghost, item)
+    const w = itemWidth(item, text, ghost)
+    placed.push({ item, text, ghost, x: width, w })
     width += w
   }
   const x = Math.round(screenWidth / 2 + (line.dx || 0) - width / 2)
@@ -60,32 +96,43 @@ export function measureLine(line, values, screenWidth) {
   return { width, x, items: placed }
 }
 
+function textWidget(item, box, text, color) {
+  return createWidget(widget.TEXT, {
+    ...box,
+    font: item.font,
+    text_size: item.size,
+    color,
+    text,
+    align_h: H_ALIGN[item.align || 'center'],
+    align_v: align.CENTER_V,
+    text_style: text_style.NONE,
+  })
+}
+
 // Create widgets for all visible lines. Returns
 //   widgets  map of item id -> widget
+//   ghosts   map of item id -> ghost widget (items with ghost segments only)
 //   update(values)  re-measure every line and push changed text/positions
 //   measure(lineId) last layout of a line ({ width, x, items })
-export function buildLines(lines, screen, values, textBoxScale) {
+export function buildLines(lines, screen, values) {
   const widgets = {}
+  const ghosts = {}
   const state = {}
   const layouts = {}
   const shown = lines.filter(visible)
 
   shown.forEach((line) => {
-    measureLine(line, values, screen.width).items.forEach(({ item, text, x, w }) => {
-      const { y, h } = itemBox(item, line, textBoxScale)
-      widgets[item.id] = isImage(item)
-        ? createWidget(widget.IMG, { x, y, w, h, src: item.src })
-        : createWidget(widget.TEXT, {
-          x, y, w, h,
-          font: item.font,
-          text_size: item.size,
-          color: item.color,
-          text,
-          align_h: H_ALIGN[item.align || 'center'],
-          align_v: align.CENTER_V,
-          text_style: text_style.NONE,
-        })
-      state[item.id] = { x, w, text }
+    measureLine(line, values, screen.width).items.forEach(({ item, text, ghost, x, w }) => {
+      const box = { x, w, ...itemBox(item, line) }
+      if (ghost !== null) {
+        // Created first so it is drawn behind the lit text.
+        const color = item.ghostColor !== undefined ? item.ghostColor
+          : line.ghostColor !== undefined ? line.ghostColor
+            : dim(item.color, GHOST.brightness)
+        ghosts[item.id] = textWidget(item, box, ghost, color)
+      }
+      widgets[item.id] = textWidget(item, box, text, item.color)
+      state[item.id] = { x, w, text, ghost }
     })
   })
 
@@ -93,16 +140,16 @@ export function buildLines(lines, screen, values, textBoxScale) {
     shown.forEach((line) => {
       const layout = measureLine(line, next, screen.width)
       layouts[line.id] = layout
-      layout.items.forEach(({ item, text, x, w }) => {
+      layout.items.forEach(({ item, text, ghost, x, w }) => {
         const last = state[item.id]
-        if (last.x === x && last.w === w && last.text === text) return
-        const change = isImage(item) ? { x } : { x, w, text }
-        widgets[item.id].setProperty(prop.MORE, change)
-        state[item.id] = { x, w, text }
+        if (last.x === x && last.w === w && last.text === text && last.ghost === ghost) return
+        widgets[item.id].setProperty(prop.MORE, { x, w, text })
+        if (ghosts[item.id]) ghosts[item.id].setProperty(prop.MORE, { x, w, text: ghost })
+        state[item.id] = { x, w, text, ghost }
       })
     })
   }
 
   update(values)
-  return { widgets, update, measure: (id) => layouts[id] }
+  return { widgets, ghosts, update, measure: (id) => layouts[id] }
 }

@@ -17,8 +17,7 @@ body { margin: 0; min-height: 100vh; display: grid; place-content: center; gap: 
 .stage { position: relative; justify-self: center; }
 #face { position: relative; overflow: hidden; border-radius: 50%; box-shadow: 0 0 0 2px #313831; }
 .widget { position: absolute; display: flex; line-height: 1; white-space: pre; overflow: hidden; }
-img.widget { object-fit: none; }
-.guides .widget-text, .guides .widget-img { outline: 1px dashed #4a6dff88; }
+.guides .widget-text { outline: 1px dashed #4a6dff88; }
 .guide { position: absolute; pointer-events: none; display: none; }
 .guides .guide { display: block; }
 .guide.v { top: 0; bottom: 0; width: 0; border-left: 1px dashed #ff40ff99; }
@@ -37,18 +36,17 @@ select, label { background: #252c26; color: #eee; border: 1px solid #526353; bor
     <option value="midnight">New year / midnight</option>
   </select>
   <label><input type="checkbox" id="guides"> Guides</label>
-  <label><input type="checkbox" id="icons"> Show icons</label>
 </div>
 <pre id="metrics"></pre>
+<script>
+// Live reload from preview/server.mjs. Registered before the face code runs, so a
+// broken config.js still reloads once it is fixed.
+new EventSource('/__reload').onmessage = () => location.reload()
+</script>
 <script type="module">
 import { mock } from '/preview/zos-browser.js'
 const config = await import('/watchface/config.js')
 const params = new URLSearchParams(location.search)
-
-// Optional: force HR/battery icons on without editing config.js.
-if (params.get('icons') === '1') {
-  config.LINES.forEach((line) => line.items.forEach((item) => { if (item.type === 'image') item.show = true }))
-}
 
 const face = document.querySelector('#face')
 face.style.width = config.SCREEN.width + 'px'
@@ -79,7 +77,7 @@ const samples = {
 // Round display: report items whose glyph box corners fall outside the circle.
 const radius = Math.min(config.SCREEN.width, config.SCREEN.height) / 2
 const outside = (line, m) => m.items.filter(({ item, x, w }) => {
-  const half = (item.type === 'image' ? item.h : item.size) / 2
+  const half = item.size / 2
   const cy = line.y + (item.dy || 0)
   return [x, x + w].some((px) => [cy - half, cy + half].some((py) =>
     Math.hypot(px - config.CX, py - config.CY) > radius))
@@ -103,10 +101,8 @@ const apply = (name) => {
 
 const sample = document.querySelector('#sample')
 const guides = document.querySelector('#guides')
-const icons = document.querySelector('#icons')
 sample.value = samples[params.get('sample')] ? params.get('sample') : 'normal'
 guides.checked = params.get('guides') === '1'
-icons.checked = params.get('icons') === '1'
 face.classList.toggle('guides', guides.checked)
 apply(sample.value)
 
@@ -117,6 +113,5 @@ const setParam = (key, value) => {
 }
 sample.addEventListener('change', () => { apply(sample.value); setParam('sample', sample.value) })
 guides.addEventListener('change', () => { face.classList.toggle('guides', guides.checked); setParam('guides', guides.checked ? 1 : 0) })
-icons.addEventListener('change', () => { setParam('icons', icons.checked ? 1 : 0); location.reload() })
 </script>
 </html>

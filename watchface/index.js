@@ -2,7 +2,7 @@
 // Layout, fonts and colors are in config.js.
 import { createWidget, widget } from '@zos/ui'
 import { Time, HeartRate, Battery, Screen } from '@zos/sensor'
-import { SCREEN, COLORS, LINES, DAYS, MONTHS, TEXT_BOX_SCALE } from './config.js'
+import { SCREEN, COLORS, LINES, DAYS } from './config.js'
 import { buildLines } from './layout.js'
 
 const pad = (value) => (value < 10 ? '0' + value : '' + value)
@@ -25,8 +25,7 @@ WatchFace({
       const t = this.time
       this.values.time = pad(t.getHours()) + ':' + pad(t.getMinutes())
       this.values.weekday = DAYS[t.getDay() - 1]
-      this.values.day = pad(t.getDate())
-      this.values.month = MONTHS[t.getMonth() - 1]
+      this.values.ddmm = pad(t.getDate()) + '.' + pad(t.getMonth())
     }
     const readHeart = () => {
       const bpm = this.heartRate.getLast()
@@ -45,7 +44,7 @@ WatchFace({
     readTime()
     readHeart()
     readBattery()
-    this.ui = buildLines(LINES, SCREEN, this.values, TEXT_BOX_SCALE)
+    this.ui = buildLines(LINES, SCREEN, this.values)
 
     this.refreshHeart = on(readHeart)
     this.refreshBattery = on(readBattery)

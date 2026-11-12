@@ -6,7 +6,7 @@ Author: Dmitrii Shmygin. Target: Amazfit T-Rex 3, 480 x 480.
 
 - Run `node test/check.mjs` for mock runtime checks of data updates, line centering
   and lifecycle cleanup.
-- Run `zeus.cmd build` to check bundling, fonts, images and compilation.
+- Run `zeus.cmd build` to check bundling, fonts, the package icon and compilation.
 - Run `node preview/server.mjs` and open http://localhost:8080/ to review the layout.
   Its sample controls exercise long values. There must be no "outside round screen"
   warnings.
@@ -15,11 +15,12 @@ Author: Dmitrii Shmygin. Target: Amazfit T-Rex 3, 480 x 480.
 ## On the watch
 
 1. Run `zeus.cmd preview`, scan the new QR code and install Green Minimal.
-2. Confirm green time, red heart rate, orange weekday and date, and battery percentage.
+2. Confirm orange weekday and DD.MM date, green time, red HRT heart rate, green BAT battery
+   percentage, and dim ghost segments behind them.
 3. Check the time against the phone. Time intentionally uses 24-hour HH:MM.
 4. Confirm the selected face has the green hollow triangle thumbnail.
 5. Check that all values fit and stay still: no clipping or scrolling. Use the browser
-   stress sample for 23:59, 199 bpm, WED, 28 AUG and 100%; repeat in the simulator
+   stress sample for 23:59, 199 bpm, WED 28.08 and 100%; repeat in the simulator
    if available.
 6. Confirm heart rate agrees with the latest reading on the watch. It is the most
    recent measured value, not a new continuous measurement; missing values show --.
@@ -42,8 +43,7 @@ checked separately from the build and HTML preview.
 
 ## Artwork and credits
 
-The green hollow triangle (`art/selector-icon.svg`) and the optional heart and battery
-icons (`art/heart.svg`, `art/battery.svg`) are original SVG artwork. `node tools/make-icons.cjs`
-renders them to PNG: 324 x 324 for the selector and 36 x 36 for the icons. The triangle is
+The green hollow triangle (`art/selector-icon.svg`) is original SVG artwork;
+`node tools/make-icon.cjs` renders its 324 x 324 PNG for the watch selector. It is
 not drawn on the active watch face. Font attribution and the link to the bundled DSEG license
 are in `CREDITS.md`.
