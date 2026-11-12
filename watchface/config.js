@@ -34,13 +34,11 @@
 //            or an exact ghost string such as '88:88'
 //   ghostColor  overrides the line's ghost color
 //   show     false hides the item. Its gap carries over to the next visible item.
-import { getDeviceInfo } from '@zos/device'
-
-const device = getDeviceInfo() || {}
-
+// T-Rex 3 screen size, fixed on purpose: calling @zos/device getDeviceInfo() while
+// this module loads leaves the face blank on the watch (confirmed on device).
 export const SCREEN = {
-  width: device.width || 480,
-  height: device.height || 480,
+  width: 480,
+  height: 480,
 }
 export const CX = SCREEN.width / 2
 export const CY = SCREEN.height / 2
