@@ -45,10 +45,10 @@ export const CY = SCREEN.height / 2
 
 export const COLORS = {
   background: 0x000000,
-  time: 0x03e97d,
-  date: 0x6ae456,
-  heartRate: 0x9edb03,
-  battery: 0xb5d600,
+  time: 0x00ff18,
+  date: 0x00e90b,
+  heartRate: 0x00d701,
+  battery: 0x00d701,
 }
 
 // Fonts available in assets/<target>/fonts. After adding a font file, run
