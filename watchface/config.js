@@ -70,7 +70,7 @@ export const TEXT_BOX_SCALE = 1.8
 // font's blank character so their digits sit exactly on the ghost cells
 // ('72' -> '!72' over '888'). Only fonts listed in `chars` get ghosts.
 export const GHOST = {
-  brightness: 0.1, // default ghost color = item color * brightness (on black)
+  brightness: 0.15, // default ghost color = item color * brightness (on black)
   blank: '!', // DSEG: blank character as wide as a digit
   chars: {
     [FONTS.DSEG7_BOLD]: '8',
@@ -87,15 +87,15 @@ export const LINES = [
     y: CY - 120,
     gap: 18,
     items: [
-      { id: 'weekday', value: 'weekday', font: FONTS.DSEG14_REGULAR, size: 54, color: COLORS.date, reserve: 'WWW', ghost: true },
-      { id: 'daymonth', value: 'ddmm', font: FONTS.DSEG7_BOLD, size: 54, color: COLORS.date,  ghost: true },
+      { id: 'weekday', value: 'weekday', font: FONTS.DSEG14_REGULAR, size: 48, color: COLORS.date, reserve: 'WWW', ghost: true },
+      { id: 'daymonth', value: 'ddmm', font: FONTS.DSEG7_BOLD, size: 48, color: COLORS.date,  ghost: true },
     ],
   },
   {
     id: 'time',
     y: CY,
     items: [
-      { id: 'clock', value: 'time', font: FONTS.DSEG7_BOLD, size: 128, color: COLORS.time, ghost: true },
+      { id: 'clock', value: 'time', font: FONTS.DSEG7_BOLD, size: 136, color: COLORS.time, ghost: true },
     ],
   },
   {
@@ -103,8 +103,8 @@ export const LINES = [
     y: CY + 120,
     gap: 8,
     items: [
-      { id: 'heartRatePrefix', text: 'HRT', font: FONTS.DSEG14_REGULAR, size: 34, color: COLORS.heartRate, ghost: true },
-      { id: 'heartRate', value: 'heartRate', font: FONTS.DSEG7_BOLD, size: 34, color: COLORS.heartRate, reserve: '000', ghost: true },
+      { id: 'heartRatePrefix', text: 'HRT', font: FONTS.DSEG14_REGULAR, size: 40, color: COLORS.heartRate, ghost: true },
+      { id: 'heartRate', value: 'heartRate', font: FONTS.DSEG7_BOLD, size: 40, color: COLORS.heartRate, reserve: '000', ghost: true },
     ],
   },
   {
@@ -112,8 +112,8 @@ export const LINES = [
     y: CY + 168,
     gap: 8,
     items: [
-      { id: 'batteryPrefix', text: 'BAT', font: FONTS.DSEG14_REGULAR, size: 34, color: COLORS.battery, ghost: true},
-      { id: 'battery', value: 'battery', font: FONTS.DSEG7_BOLD, size: 34, color: COLORS.battery, reserve: '000', align: 'right', ghost: true },
+      { id: 'batteryPrefix', text: 'BAT', font: FONTS.DSEG14_REGULAR, size: 40, color: COLORS.battery, ghost: true},
+      { id: 'battery', value: 'battery', font: FONTS.DSEG7_BOLD, size: 40, color: COLORS.battery, reserve: '000', align: 'right', ghost: true },
     ],
   },
 ]
