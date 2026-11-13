@@ -5,12 +5,13 @@ export const mock = {
   listeners: {},
   permission: 2, // queryPermission status: 2 = granted
   profile: { age: 34 },
+  edit: {}, // edit_id -> option id the user chose; missing = the group's default_type
   widgets: [],
 }
 
-export const widget = { TEXT: 'TEXT', FILL_RECT: 'FILL_RECT', WIDGET_DELEGATE: 'WIDGET_DELEGATE' }
+export const widget = { TEXT: 'TEXT', FILL_RECT: 'FILL_RECT', WIDGET_DELEGATE: 'WIDGET_DELEGATE', WATCHFACE_EDIT_GROUP: 'WATCHFACE_EDIT_GROUP' }
 export const align = { LEFT: 'LEFT', RIGHT: 'RIGHT', CENTER_H: 'CENTER_H', TOP: 'TOP', BOTTOM: 'BOTTOM', CENTER_V: 'CENTER_V' }
-export const prop = { TEXT: 'TEXT', MORE: 'MORE' }
+export const prop = { TEXT: 'TEXT', MORE: 'MORE', CURRENT_TYPE: 'CURRENT_TYPE' }
 export const text_style = { NONE: 'NONE', WRAP: 'WRAP', ELLIPSIS: 'ELLIPSIS' }
 
 export function createWidget(type, options) {
@@ -21,6 +22,12 @@ export function createWidget(type, options) {
       if (key === prop.MORE) Object.assign(this, value)
       else if (key === prop.TEXT) this.text = value
       else throw new Error('Unexpected property ' + key)
+    },
+    getProperty(key) {
+      if (type === widget.WATCHFACE_EDIT_GROUP && key === prop.CURRENT_TYPE) {
+        return this.edit_id in mock.edit ? mock.edit[this.edit_id] : this.default_type
+      }
+      throw new Error('Unexpected getProperty ' + key)
     },
   }
   mock.widgets.push(instance)

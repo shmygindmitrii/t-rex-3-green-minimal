@@ -1,11 +1,12 @@
 // Watch face lifecycle: reads sensors into `values` and hands them to the layout.
-// Layout, fonts and colors are in config.js.
+// Layout, fonts and colors are in config.js; the watch's edit-mode choices in edit.js.
 import { createWidget, widget } from '@zos/ui'
 import { Time, HeartRate, Battery, Screen } from '@zos/sensor'
 import { queryPermission } from '@zos/app'
 import { getProfile } from '@zos/user'
-import { SCREEN, COLORS, LINES, DAYS, COLOR_RULES, heartRateRules } from './config.js'
+import { SCREEN, BACKGROUND, LINES, DAYS, COLOR_RULES, heartRateRules } from './config.js'
 import { buildLines } from './layout.js'
+import { readTheme } from './edit.js'
 
 const pad = (value) => (value < 10 ? '0' + value : '' + value)
 
@@ -35,7 +36,7 @@ WatchFace({
     COLOR_RULES.heartRate.rules = heartRateRules(readAge())
 
     createWidget(widget.FILL_RECT, {
-      x: 0, y: 0, w: SCREEN.width, h: SCREEN.height, color: COLORS.background,
+      x: 0, y: 0, w: SCREEN.width, h: SCREEN.height, color: BACKGROUND,
     })
 
     // Each reader fills its part of `values`; render() pushes them to the widgets.
@@ -63,6 +64,13 @@ WatchFace({
     readHeart()
     readBattery()
     this.ui = buildLines(LINES, SCREEN, this.values)
+    // Edit-mode areas, created after the lines: the watch draws widgets in creation
+    // order, and the option previews must cover the live face while choosing.
+    // Their choice can only be read once they exist, so the lines are recolored
+    // here, before anything is shown. The face restarts after the user saves a
+    // choice, so reading it once is enough.
+    this.theme = readTheme()
+    this.ui.setTheme(this.theme)
 
     this.refreshHeart = on(readHeart)
     this.refreshBattery = on(readBattery)

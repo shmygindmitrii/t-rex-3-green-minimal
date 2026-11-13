@@ -2,7 +2,8 @@
 // Positions are never hardcoded; they are computed from config.js on every update.
 import { createWidget, widget, align, prop, text_style } from '@zos/ui'
 import { FONT_METRICS } from './font-metrics.js'
-import { TEXT_BOX_SCALE, GHOST } from './config.js'
+import { TEXT_BOX_SCALE, GHOST, BACKGROUND } from './config.js'
+import { DEFAULT_THEME } from './edit.js'
 
 const H_ALIGN = { left: align.LEFT, center: align.CENTER_H, right: align.RIGHT }
 
@@ -25,24 +26,36 @@ function itemText(item, values) {
   return value === undefined || value === null ? '' : '' + value
 }
 
-// Current color of an item: the first matching `colorBy` rule for the numeric
-// data value, otherwise the item's own color (also for non-numbers such as '--').
-export function itemColor(item, values) {
-  const by = item.colorBy
-  if (!by) return item.color
-  const raw = values[by.value]
-  const n = raw === undefined || raw === null || raw === '' ? NaN : Number(raw)
-  if (isNaN(n)) return item.color
-  for (const rule of by.rules) {
-    if (rule.below !== undefined && n < rule.below) return rule.color
-    if (rule.atLeast !== undefined && n >= rule.atLeast) return rule.color
-  }
-  return item.color
+// A color: a scheme role name ('time', 'warning', ...) looked up in `colors`,
+// or a fixed 0xRRGGBB number.
+export function resolveColor(color, colors) {
+  if (typeof color !== 'string') return color
+  if (!(color in colors)) throw new Error('Color scheme has no role ' + color)
+  return colors[color]
 }
 
-const ghostColor = (item, line, color) => (item.ghostColor !== undefined ? item.ghostColor
-  : line.ghostColor !== undefined ? line.ghostColor
-    : dim(color, GHOST.brightness))
+// Current color of an item as 0xRRGGBB: the first matching `colorBy` rule for the
+// numeric data value, otherwise the item's own color (also for non-numbers such as '--').
+export function itemColor(item, values, colors) {
+  const by = item.colorBy
+  const own = resolveColor(item.color, colors)
+  if (!by) return own
+  const raw = values[by.value]
+  const n = raw === undefined || raw === null || raw === '' ? NaN : Number(raw)
+  if (isNaN(n)) return own
+  for (const rule of by.rules) {
+    if (rule.below !== undefined && n < rule.below) return resolveColor(rule.color, colors)
+    if (rule.atLeast !== undefined && n >= rule.atLeast) return resolveColor(rule.color, colors)
+  }
+  return own
+}
+
+// Ghost color for the theme. Level 0 hides ghosts by painting them in the
+// background color (the widgets stay, so the face can switch theme in place).
+const ghostColor = (item, line, color, theme) => (theme.ghost === 0 ? BACKGROUND
+  : item.ghostColor !== undefined ? resolveColor(item.ghostColor, theme.colors)
+  : line.ghostColor !== undefined ? resolveColor(line.ghostColor, theme.colors)
+    : dim(color, theme.ghost))
 
 // Dim a 0xRRGGBB color, as an unlit segment on a black background.
 export function dim(color, factor) {
@@ -91,7 +104,8 @@ function itemBox(item, line) {
 
 // Horizontal placement of one line for the given values.
 // Returns { width, x, items: [{ item, text, ghost, color, x, w }] }, hidden items excluded.
-export function measureLine(line, values, screenWidth) {
+// `colors` is the scheme's role -> 0xRRGGBB map; the layout does not depend on it.
+export function measureLine(line, values, screenWidth, colors = DEFAULT_THEME.colors) {
   const placed = []
   let width = 0
   let pendingGap = 0
@@ -107,7 +121,7 @@ export function measureLine(line, values, screenWidth) {
     const ghost = ghostText(item, line, text)
     if (ghost) text = padToGhost(text, ghost, item)
     const w = itemWidth(item, text, ghost)
-    placed.push({ item, text, ghost, color: itemColor(item, values), x: width, w })
+    placed.push({ item, text, ghost, color: itemColor(item, values, colors), x: width, w })
     width += w
   }
   const x = Math.round(screenWidth / 2 + (line.dx || 0) - width / 2)
@@ -133,7 +147,9 @@ function textWidget(item, box, text, color) {
 //   ghosts   map of item id -> ghost widget (items with ghost segments only)
 //   update(values)  re-measure every line and push changed text/positions
 //   measure(lineId) last layout of a line ({ width, x, items })
-export function buildLines(lines, screen, values) {
+//   setTheme(theme) recolor everything for another theme
+// `theme` is { colors, ghost }: the scheme's colors and the ghost level.
+export function buildLines(lines, screen, values, theme = DEFAULT_THEME) {
   const widgets = {}
   const ghosts = {}
   const state = {}
@@ -141,29 +157,35 @@ export function buildLines(lines, screen, values) {
   const shown = lines.filter(visible)
 
   shown.forEach((line) => {
-    measureLine(line, values, screen.width).items.forEach(({ item, text, ghost, color, x, w }) => {
+    measureLine(line, values, screen.width, theme.colors).items.forEach(({ item, text, ghost, color, x, w }) => {
       const box = { x, w, ...itemBox(item, line) }
       // Created first so it is drawn behind the lit text.
-      if (ghost !== null) ghosts[item.id] = textWidget(item, box, ghost, ghostColor(item, line, color))
+      if (ghost !== null) ghosts[item.id] = textWidget(item, box, ghost, ghostColor(item, line, color, theme))
       widgets[item.id] = textWidget(item, box, text, color)
-      state[item.id] = { x, w, text, ghost, color }
+      state[item.id] = { x, w, text, ghost, color, theme }
     })
   })
 
+  let current = values
   const update = (next) => {
+    current = next
     shown.forEach((line) => {
-      const layout = measureLine(line, next, screen.width)
+      const layout = measureLine(line, next, screen.width, theme.colors)
       layouts[line.id] = layout
       layout.items.forEach(({ item, text, ghost, color, x, w }) => {
         const last = state[item.id]
-        if (last.x === x && last.w === w && last.text === text && last.ghost === ghost && last.color === color) return
+        if (last.theme === theme && last.x === x && last.w === w && last.text === text && last.ghost === ghost && last.color === color) return
         widgets[item.id].setProperty(prop.MORE, { x, w, text, color })
-        if (ghosts[item.id]) ghosts[item.id].setProperty(prop.MORE, { x, w, text: ghost, color: ghostColor(item, line, color) })
-        state[item.id] = { x, w, text, ghost, color }
+        if (ghosts[item.id]) ghosts[item.id].setProperty(prop.MORE, { x, w, text: ghost, color: ghostColor(item, line, color, theme) })
+        state[item.id] = { x, w, text, ghost, color, theme }
       })
     })
   }
+  const setTheme = (next) => {
+    theme = next
+    update(current)
+  }
 
   update(values)
-  return { widgets, ghosts, update, measure: (id) => layouts[id] }
+  return { widgets, ghosts, update, setTheme, measure: (id) => layouts[id] }
 }

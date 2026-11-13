@@ -2,15 +2,15 @@
   "configVersion": "v2",
   "app": {
     "appId": 21895,
-    "appName": "Green Minimal",
+    "appName": "LCD Minimal",
     "appType": "watchface",
     "version": {
-      "code": 18,
-      "name": "1.8.0"
+      "code": 19,
+      "name": "1.9.0"
     },
     "icon": "icon.png",
     "vender": "Dmitrii Shmygin",
-    "description": "Minimal green clock with heart rate, date, weekday and battery percentage on pure black"
+    "description": "Retro LCD clock with unlit ghost segments: time, date, weekday, heart rate and battery. Four color schemes and adjustable ghost brightness, chosen on the watch."
   },
   "permissions": ["data:user.hd.heart_rate", "data:user.info"],
   "runtime": {
@@ -26,7 +26,7 @@
         "watchface": {
           "path": "watchface/index",
           "main": 1,
-          "editable": 0,
+          "editable": 1,
           "lockscreen": 0,
           "hightCost": 0
         }
@@ -53,7 +53,7 @@
   },
   "i18n": {
     "en-US": {
-      "appName": "Green Minimal"
+      "appName": "LCD Minimal"
     }
   },
   "defaultLanguage": "en-US"

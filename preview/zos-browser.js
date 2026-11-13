@@ -8,12 +8,14 @@ export const mock = {
   listeners: {},
   permission: 2, // queryPermission status: 2 = granted
   profile: { age: params.has('age') ? +params.get('age') : 34 }, // ?age=50 in the page URL
+  edit: {}, // edit_id -> option id chosen in the page's edit controls
+  editGroups: [], // options of every WATCHFACE_EDIT_GROUP the face created
   widgets: [],
 }
 
-export const widget = { TEXT: 'TEXT', FILL_RECT: 'FILL_RECT', WIDGET_DELEGATE: 'WIDGET_DELEGATE' }
+export const widget = { TEXT: 'TEXT', FILL_RECT: 'FILL_RECT', WIDGET_DELEGATE: 'WIDGET_DELEGATE', WATCHFACE_EDIT_GROUP: 'WATCHFACE_EDIT_GROUP' }
 export const align = { LEFT: 'flex-start', RIGHT: 'flex-end', CENTER_H: 'center', TOP: 'flex-start', BOTTOM: 'flex-end', CENTER_V: 'center' }
-export const prop = { TEXT: 'TEXT', MORE: 'MORE' }
+export const prop = { TEXT: 'TEXT', MORE: 'MORE', CURRENT_TYPE: 'CURRENT_TYPE' }
 export const text_style = { NONE: 'NONE', WRAP: 'WRAP', ELLIPSIS: 'ELLIPSIS' }
 
 const fonts = {}
@@ -48,6 +50,18 @@ export function createWidget(type, options) {
   if (type === widget.WIDGET_DELEGATE) {
     mock.listeners.resume = options.resume_call
     return {}
+  }
+  if (type === widget.WATCHFACE_EDIT_GROUP) {
+    // Shown only with Guides, as a dashed tap area.
+    const el = document.createElement('div')
+    el.className = 'edit-area'
+    Object.assign(el.style, { left: options.x + 'px', top: options.y + 'px', width: options.w + 'px', height: options.h + 'px' })
+    document.querySelector('#face').append(el)
+    mock.editGroups.push(options)
+    return {
+      getProperty: (key) => (key === prop.CURRENT_TYPE && options.edit_id in mock.edit
+        ? mock.edit[options.edit_id] : options.default_type),
+    }
   }
   const el = document.createElement('div')
   el.className = 'widget widget-' + type.toLowerCase()

@@ -1,18 +1,23 @@
-# Green Minimal
+# LCD Minimal
 
-Minimal watch face for Amazfit T-Rex 3 by **Dmitrii Shmygin**.
+Minimal retro LCD watch face for Amazfit T-Rex 3 by **Dmitrii Shmygin**.
 
 - Old-LCD look: DSEG7/DSEG14 segment fonts with dim unlit "ghost" segments behind
   the text, on a pure black `#000000` background.
-- All green: English weekday and `DD.MM` date above the time, such as `THU 12.11`,
-  and a 24-hour time.
+- English weekday and `DD.MM` date above the time, such as `THU 12.11`, and a
+  24-hour time.
+- Chosen on the watch (long-press the face → Edit): a color scheme (green, cyan,
+  orange or red; tap the time) and the ghost brightness, in steps from off (tap
+  the date; levels in `GHOST.levels`).
 - `HRT`: latest measured heart rate; `--` when unavailable.
 - `BAT`: battery percentage.
-- `HRT` and `BAT` turn yellow, then red, as the value gets worse. Battery
+- `HRT` and `BAT` switch to the scheme's warning, then alert color, as the value
+  gets worse. Battery
   thresholds are in `COLOR_RULES`. Heart rate zones are a share of max heart rate
   (220 − age, the age from your Zepp profile) and are set in `HEART_RATE_ZONES`.
   The preview lists the resulting numbers.
-- Green hollow triangle selector icon. No images on the active face.
+- The selector icon is the face itself at 10:09. The active face draws text only;
+  images are used just for the edit-mode previews.
 
 ## Install or update
 
@@ -32,13 +37,14 @@ zeus.cmd preview
 ```
 
 Sign in with the same Zepp account as the phone. Scan the fresh QR code in the
-paired watch's Developer Mode in Zepp, then install and select Green Minimal.
+paired watch's Developer Mode in Zepp, then install and select LCD Minimal.
 `preview` builds before generating its QR code. `zeus.cmd build` creates a local
 ZAB package in `dist/` without generating a QR code.
 
 ## Preview and edit
 
-All layout, fonts and colors are in [`watchface/config.js`](watchface/config.js).
+All layout, fonts, color schemes and edit-mode options are in
+[`watchface/config.js`](watchface/config.js).
 The face is a list of horizontal lines:
 
 - Each line is automatically centered on the screen. Move a whole line up or down
@@ -48,17 +54,23 @@ The face is a list of horizontal lines:
 - Items in a line are laid out left to right with `gap` pixels between them. Their
   widths are measured from the real font metrics, not hardcoded.
 - Change any part's font with its `font:` field (pick from `FONTS`), and its size
-  and color the same way.
+  the same way. `color` names a role from the color scheme (`'time'`, `'date'`,
+  ...), so the part follows the scheme chosen on the watch.
 - `reserve: '000'` gives an item a fixed width, so the line doesn't shift when a
   value gets shorter. `align` places the text inside that width.
 - For an old-LCD look, add `ghost: true` to a line. Unlit segments are drawn
   behind its text, for example a dim `88:88` behind `10:09`. `ghost: false` on an
-  item excludes it, and `ghostColor` sets the color. The default color and the
-  segment characters are in `GHOST`.
+  item excludes it, and `ghostColor` sets the color. The brightness levels offered
+  on the watch, the default level and the segment characters are in `GHOST`.
 - `colorBy: COLOR_RULES.battery` makes an item's color depend on a value. The
-  thresholds and colors are in `COLOR_RULES` and `COLORS`. Labels such as `BAT`
+  thresholds are in `COLOR_RULES`, the colors in each scheme. Labels such as `BAT`
   use it too, so they change color with their value. The heart rate zones are in
   `HEART_RATE_ZONES`; preview another age with `?age=50`.
+- `SCHEMES` lists the color schemes; the first is the default. Each defines every
+  color role, including its own warning and alert colors. `EDIT` places the
+  edit-mode areas. After changing either, or `GHOST` levels, run
+  `node tools/make-edit-images.mjs` to redraw the edit-mode previews (the tests
+  fail while an image is missing).
 
 Preview the real face code in a browser:
 
@@ -67,21 +79,26 @@ node preview/server.mjs
 ```
 
 Then open http://localhost:8080/. The page has sample values, including long
-values, missing heart rate, and yellow and red heart rate and battery readings. `Guides` shows the center lines and widget boxes.
-Below the face, each line's width and
-position is listed, with a warning when an item goes outside the round screen.
+values, missing heart rate, and warning and alert heart rate and battery readings.
+The scheme and ghost selectors act like the watch's edit mode. `Guides` shows
+the center lines, widget boxes and edit-mode areas. Below the face, each line's
+width and position is listed, with a warning when an item goes outside the round
+screen.
 The browser renders text slightly differently, so check final rendering on the
 watch.
 
-### Fonts and the package icon
+### Fonts and images
 
 - **New font:** put the TTF under `assets/480x480-amazfit-t-rex-3/fonts/` and add
   it to `FONTS`. Then run `node tools/font-metrics.cjs`, which regenerates
   `watchface/font-metrics.js` so the new font can be measured.
-- **Package icon:** `art/selector-icon.svg` is the editable source of the selector
-  thumbnail. `node tools/make-icon.cjs` renders it to
-  `assets/480x480-amazfit-t-rex-3/icon.png` (324 x 324) using Sharp from the global
-  Zeus install in `%APPDATA%/npm`.
+- **Package icon:** `node tools/make-icon.mjs` screenshots the browser preview at
+  10:09 (default scheme and sample values), cuts it to the round screen and saves
+  `assets/480x480-amazfit-t-rex-3/icon.png` (324 x 324, Zepp's preview size for
+  480 x 480). Rerun it after visual changes. It needs Microsoft Edge.
+- **Edit-mode images:** `node tools/make-edit-images.mjs` draws the previews and
+  frames into `assets/480x480-amazfit-t-rex-3/edit/`.
+- Both tools use Sharp from the global Zeus install in `%APPDATA%/npm`.
 
 ## Compatibility
 
@@ -105,5 +122,5 @@ The MIT license does not apply to these third-party fonts. Their original copyri
 notices and license texts are included with the repository.
 
 Build packages in `dist/` and `release/` are excluded from Git. Distribute them as
-release attachments. The font and icon under `assets/` are required source assets
-and are included in the repository.
+release attachments. The fonts, icon and edit-mode images under `assets/` are
+required package assets and are included in the repository.

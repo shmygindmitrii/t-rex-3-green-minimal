@@ -1,4 +1,5 @@
-// Mock-runtime checks: data updates, layout centering, ghost segments, lifecycle cleanup.
+// Mock-runtime checks: data updates, layout centering, ghost segments, color schemes,
+// edit mode, lifecycle cleanup.
 // Run: node test/check.mjs. Device rendering still needs the real watch.
 import assert from 'node:assert/strict'
 import { register } from 'node:module'
@@ -9,8 +10,11 @@ const { readings, listeners } = mock
 let face
 globalThis.WatchFace = (definition) => { face = definition }
 
-const { LINES, SCREEN, CX, FONTS, GHOST, COLORS, COLOR_RULES, HEART_RATE_ZONES, heartRateRules } = await import('../watchface/config.js')
-const { buildLines, measureLine, textWidth, dim, itemColor } = await import('../watchface/layout.js')
+const { LINES, SCREEN, CX, FONTS, GHOST, SCHEMES, EDIT, BACKGROUND, COLOR_RULES, HEART_RATE_ZONES, heartRateRules } = await import('../watchface/config.js')
+const { buildLines, measureLine, textWidth, dim, itemColor, resolveColor } = await import('../watchface/layout.js')
+const edit = await import('../watchface/edit.js')
+// Colors of the default (first) scheme, which the face uses unless changed on the watch
+const COLORS = SCHEMES[0].colors
 await import('../watchface/index.js')
 
 Object.assign(readings, { hour: 23, minute: 59, day: 7, date: 31, month: 12, bpm: 199, battery: 100 })
@@ -22,7 +26,7 @@ const ids = (lineId) => LINES.find((l) => l.id === lineId).items.filter((i) => i
 // --- startup values (the ghost-free part of each text is the data)
 const bare = (id) => w[id].text.replace(new RegExp('\\' + GHOST.blank, 'g'), '')
 assert.equal(mock.widgets[0].type, 'FILL_RECT')
-assert.equal(mock.widgets[0].color, 0)
+assert.equal(mock.widgets[0].color, BACKGROUND)
 assert.deepEqual([mock.widgets[0].w, mock.widgets[0].h], [SCREEN.width, SCREEN.height])
 assert.equal(bare('clock'), '23:59')
 assert.equal(bare('heartRate'), '199')
@@ -148,7 +152,7 @@ assert.equal(g.widgets.gHeart.text, GHOST.blank + '72')
 assert.equal(g.widgets.gCustom.text, '5' + GHOST.blank + GHOST.blank)
 assert.equal(g.widgets.gClock.text, '10:09')
 // colors: default dimmed item color, line override, item override
-assert.equal(g.ghosts.gClock.color, dim(0x75ff69, GHOST.brightness))
+assert.equal(g.ghosts.gClock.color, dim(0x75ff69, GHOST.default))
 assert.equal(g.ghosts.gHeart.color, 0x222222)
 assert.equal(g.ghosts.gCustom.color, 0x010101)
 // ghost is drawn behind (created just before) its text, with an identical box
@@ -169,7 +173,7 @@ assert.deepEqual(Object.keys(g.ghosts).map((id) => g.ghosts[id].x), gx)
 // --- value-dependent colors. Thresholds are only written in config.js: these
 //     checks read them from COLOR_RULES / HEART_RATE_ZONES.
 const OWN = 0x123456 // item's own color, distinct from every rule color
-const ruled = (entry, value) => itemColor({ color: OWN, colorBy: entry }, { [entry.value]: '' + value })
+const ruled = (entry, value) => itemColor({ color: OWN, colorBy: entry }, { [entry.value]: '' + value }, COLORS)
 const limit = (rule) => (rule.below !== undefined ? rule.below : rule.atLeast)
 // first value in 0..300 that gets `color` (OWN = no rule matches)
 const valueFor = (entry, color) => {
@@ -181,15 +185,15 @@ const valueFor = (entry, color) => {
 const T = { value: 'x', rules: [{ below: 10, color: 1 }, { atLeast: 90, color: 2 }, { below: 50, color: 3 }] }
 assert.deepEqual([0, 9, 10, 49, 50, 89, 90, 300].map((v) => ruled(T, v)), [1, 1, 3, 3, OWN, OWN, 2, 2])
 assert.equal(ruled(T, '--'), OWN) // not a number
-assert.equal(itemColor({ color: OWN }, { x: '1' }), OWN) // no colorBy
+assert.equal(itemColor({ color: OWN }, { x: '1' }, COLORS), OWN) // no colorBy
 
 // every configured rule switches exactly at its threshold and is reachable
 for (const [name, entry] of Object.entries(COLOR_RULES)) {
   for (const rule of entry.rules) {
     const n = limit(rule)
     const [inside, outside] = rule.below !== undefined ? [n - 1, n] : [n, n - 1]
-    assert.equal(ruled(entry, inside), rule.color, `${name}: ${inside} gets its rule color`)
-    assert.notEqual(ruled(entry, outside), rule.color, `${name}: ${outside} is past the threshold`)
+    assert.equal(ruled(entry, inside), COLORS[rule.color], `${name}: ${inside} gets its rule color`)
+    assert.notEqual(ruled(entry, outside), COLORS[rule.color], `${name}: ${outside} is past the threshold`)
   }
   assert.equal(ruled(entry, '--'), OWN, name + ': -- keeps own color')
   valueFor(entry, OWN) // some values keep the item's own color
@@ -204,7 +208,7 @@ const colored = LINES.filter((l) => l.items.some((i) => i.colorBy))
 const cui = buildLines(colored, SCREEN, at(OWN))
 const expectColor = (ids, color) => ids.forEach((id) => {
   assert.equal(cui.widgets[id].color, color, id + ' color')
-  if (cui.ghosts[id]) assert.equal(cui.ghosts[id].color, dim(color, GHOST.brightness), id + ' ghost color')
+  if (cui.ghosts[id]) assert.equal(cui.ghosts[id].color, dim(color, GHOST.default), id + ' ghost color')
 })
 const hrIds = ['heartRatePrefix', 'heartRate']
 const batIds = ['batteryPrefix', 'battery']
@@ -275,5 +279,110 @@ assert.equal(face.ui.widgets.heartRate.color, COLORS.alert)
 face.onDestroy()
 mock.profile = { age: Z.defaultAge }
 
-console.log('PASS: startup, centering, reserved widths, rollover, wake/resume catch-up, cleanup, hidden items, ghosts, value colors, age-based heart-rate zones.')
+// --- color schemes: every scheme defines every role the face uses, and its
+//     warning/alert colors clearly stand out from its own colors and each other
+const roles = new Set([
+  ...LINES.flatMap((l) => l.items).map((i) => i.color).filter((c) => typeof c === 'string'),
+  ...Object.values(COLOR_RULES).flatMap((e) => e.rules.map((r) => r.color)),
+])
+const rgbDistance = (a, b) => Math.hypot(...[16, 8, 0].map((sh) => ((a >> sh) & 0xff) - ((b >> sh) & 0xff)))
+for (const scheme of SCHEMES) {
+  for (const role of roles) assert.equal(typeof scheme.colors[role], 'number', `${scheme.name} defines ${role}`)
+  const own = Object.entries(scheme.colors).filter(([role]) => role !== 'warning' && role !== 'alert').map(([, c]) => c)
+  for (const signal of ['warning', 'alert']) {
+    for (const c of own) assert.ok(rgbDistance(scheme.colors[signal], c) >= 100, `${scheme.name}: ${signal} stands out`)
+  }
+  assert.ok(rgbDistance(scheme.colors.warning, scheme.colors.alert) >= 100, `${scheme.name}: warning vs alert`)
+  assert.equal(resolveColor('time', scheme.colors), scheme.colors.time)
+}
+assert.throws(() => resolveColor('nope', COLORS), /no role nope/)
+
+// --- edit-mode options: ids unique and in the custom range, defaults present
+const allTypes = [...edit.OPTIONS.scheme, ...edit.OPTIONS.ghost].map((o) => o.type)
+assert.equal(new Set(allTypes).size, allTypes.length, 'option ids unique')
+allTypes.forEach((t) => assert.ok(t >= 100000, 'custom option id ' + t))
+assert.ok(GHOST.levels.includes(GHOST.default))
+assert.equal(edit.ghostType(0.15), GHOST.typeBase + 15)
+assert.notEqual(EDIT.scheme.id, EDIT.ghost.id)
+
+// the face creates both edit areas, inside the round screen, with every image present
+mock.widgets.length = 0
+mock.edit = {}
+face.build()
+const groups = mock.widgets.filter((x) => x.type === 'WATCHFACE_EDIT_GROUP')
+assert.deepEqual(groups.map((x) => x.edit_id), [EDIT.scheme.id, EDIT.ghost.id])
+// drawn on top: the watch paints in creation order, and the option previews must
+// cover the live face while the user is choosing (confirmed on the watch)
+const lastText = mock.widgets.map((x) => x.type).lastIndexOf('TEXT')
+groups.forEach((grp) => assert.ok(mock.widgets.indexOf(grp) > lastText, `edit area ${grp.edit_id} created after the text`))
+const inScreen = (x, y) => Math.hypot(x - CX, y - SCREEN.height / 2) <= SCREEN.width / 2
+const { existsSync } = await import('node:fs')
+const ASSETS = new URL('../assets/480x480-amazfit-t-rex-3/', import.meta.url)
+for (const grp of groups) {
+  for (const [x, y] of [[grp.x, grp.y], [grp.x + grp.w, grp.y], [grp.x, grp.y + grp.h], [grp.x + grp.w, grp.y + grp.h]]) {
+    assert.ok(inScreen(x, y), `edit area ${grp.edit_id} corner ${x},${y} on screen`)
+  }
+  const tipsTop = grp.y + grp.tips_y
+  for (const [x, y] of [[grp.x + grp.tips_x, tipsTop], [grp.x + grp.tips_x + grp.tips_width, tipsTop + EDIT.tipsSize.h]]) {
+    assert.ok(inScreen(x, y), `tips of ${grp.edit_id} at ${x},${y} on screen`)
+  }
+  assert.equal(grp.count, grp.optional_types.length)
+  assert.ok(grp.optional_types.some((o) => o.type === grp.default_type))
+  const images = [grp.select_image, grp.un_select_image, grp.tips_BG, ...grp.optional_types.map((o) => o.preview)]
+  for (const image of images) {
+    assert.ok(existsSync(new URL(image, ASSETS)), `missing ${image}: run node tools/make-edit-images.mjs`)
+  }
+}
+face.onDestroy()
+
+// the chosen scheme and ghost level reach every widget; while the user is still
+// choosing (-1) or for an unknown id, the defaults are used
+const buildEdited = (choice) => {
+  mock.widgets.length = 0
+  mock.edit = choice
+  Object.assign(readings, { hour: 10, minute: 9, bpm: 72, battery: 82 })
+  face.build()
+  const result = { theme: face.theme, ui: face.ui }
+  face.onDestroy()
+  mock.edit = {}
+  return result
+}
+for (const scheme of SCHEMES) {
+  for (const level of GHOST.levels) {
+    const { theme, ui } = buildEdited({ [EDIT.scheme.id]: scheme.type, [EDIT.ghost.id]: edit.ghostType(level) })
+    assert.equal(theme.colors, scheme.colors)
+    assert.equal(theme.ghost, level)
+    assert.equal(ui.widgets.clock.color, scheme.colors.time, `${scheme.name} time`)
+    assert.equal(ui.widgets.weekday.color, scheme.colors.date, `${scheme.name} date`)
+    assert.equal(ui.widgets.battery.color, scheme.colors.battery, `${scheme.name} battery`)
+    const ghostColor = level === 0 ? BACKGROUND : dim(scheme.colors.time, level)
+    assert.equal(ui.ghosts.clock.color, ghostColor, `${scheme.name} ghost ${level}`)
+    if (level === 0) Object.values(ui.ghosts).forEach((x) => assert.equal(x.color, BACKGROUND, 'level 0 hides every ghost'))
+  }
+}
+const defaults = (choice, why) => {
+  const { theme } = buildEdited(choice)
+  assert.equal(theme.colors, SCHEMES[0].colors, why + ': default scheme')
+  assert.equal(theme.ghost, GHOST.default, why + ': default ghost')
+}
+defaults({}, 'nothing chosen')
+defaults({ [EDIT.scheme.id]: -1, [EDIT.ghost.id]: -1 }, 'choosing in edit mode')
+defaults({ [EDIT.scheme.id]: 999, [EDIT.ghost.id]: 100199 }, 'unknown ids')
+// value colors use the chosen scheme's warning and alert
+const red = SCHEMES[SCHEMES.length - 1]
+readings.battery = valueFor(B, COLORS.alert)
+mock.widgets.length = 0
+mock.edit = { [EDIT.scheme.id]: red.type }
+face.build()
+assert.equal(face.ui.widgets.battery.color, red.colors.alert)
+face.onDestroy()
+mock.edit = {}
+// ghost level 0 keeps the exact layout of the ghosted face
+const lit = buildEdited({ [EDIT.ghost.id]: edit.ghostType(GHOST.default) }).ui.widgets
+const dark = buildEdited({ [EDIT.ghost.id]: edit.ghostType(0) }).ui.widgets
+for (const id of Object.keys(lit)) {
+  for (const key of ['x', 'y', 'w', 'h', 'text']) assert.equal(dark[id][key], lit[id][key], `level 0 keeps ${id}.${key}`)
+}
+
+console.log('PASS: startup, centering, reserved widths, rollover, wake/resume catch-up, cleanup, hidden items, ghosts, value colors, age-based heart-rate zones, color schemes, ghost levels, edit mode.')
 console.log('Device rendering still requires real-watch checks. Custom AOD is not included.')

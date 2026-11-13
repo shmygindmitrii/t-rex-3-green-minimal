@@ -1,4 +1,5 @@
-// Everything you normally tweak lives in this file: screen, colors, fonts and lines.
+// Everything you normally tweak lives in this file: screen, color schemes, fonts,
+// lines and the watch's edit-mode options.
 //
 // Layout model
 // ------------
@@ -14,7 +15,8 @@
 //   gap      default space between items, px
 //   ghost    true draws unlit LCD segments behind every text item of the line
 //            ("88:88" behind "10:09"); see GHOST below
-//   ghostColor  color of the unlit segments (default: item color dimmed)
+//   ghostColor  color of the unlit segments (default: item color dimmed by the
+//            ghost level chosen on the watch, see GHOST)
 //   show     false hides the whole line
 //   items    list of text items (see below)
 //
@@ -24,7 +26,8 @@
 //   text     fixed text instead of `value`
 //   font     path from FONTS
 //   size     font size, px
-//   color    0xRRGGBB
+//   color    a color role from SCHEMES ('time', 'date', ...), so it follows the
+//            scheme chosen on the watch, or a fixed 0xRRGGBB
 //   colorBy  value-dependent color, one of COLOR_RULES (see below). Works on fixed
 //            text too, so a label can follow its value.
 //   reserve  sample of the widest expected text, e.g. '000'. The item always takes
@@ -46,15 +49,36 @@ export const SCREEN = {
 export const CX = SCREEN.width / 2
 export const CY = SCREEN.height / 2
 
-export const COLORS = {
-  background: 0x000000,
-  time: 0x00ff18,
-  date: 0x00e90b,
-  heartRate: 0x00d701,
-  battery: 0x00d701,
-  warning: 0xffd60a, // yellow, see COLOR_RULES
-  alert: 0xff3b30, // red, see COLOR_RULES
-}
+// Background, the same for every scheme (Zepp requires black faces).
+export const BACKGROUND = 0x000000
+
+// Color schemes, chosen on the watch: long-press the face > Edit > tap the time.
+// The first scheme is the default. Items and COLOR_RULES name colors by role
+// ('time', 'warning', ...), so every scheme must define every role.
+// `warning` and `alert` (see COLOR_RULES) must stand out from the scheme's own
+// colors. Shades: date and values are dimmer than the time, by the same ratio in
+// every scheme (date ~0.91, values ~0.84).
+// `type` is the edit-mode option id (>= 100000). The watch stores the user's
+// choice by it, so never change or reuse an id. After changing schemes, run
+// `node tools/make-edit-images.mjs` to redraw the edit-mode previews.
+export const SCHEMES = [
+  {
+    type: 100001, name: 'Green', title_sc: '绿色', title_tc: '綠色',
+    colors: { time: 0x00ff18, date: 0x00e90b, heartRate: 0x00d701, battery: 0x00d701, warning: 0xffd60a, alert: 0xff3b30 },
+  },
+  {
+    type: 100002, name: 'Cyan', title_sc: '青色', title_tc: '青色',
+    colors: { time: 0x00e5ff, date: 0x00d1e9, heartRate: 0x00c1d7, battery: 0x00c1d7, warning: 0xffd60a, alert: 0xff3b30 },
+  },
+  {
+    type: 100003, name: 'Orange', title_sc: '橙色', title_tc: '橙色',
+    colors: { time: 0xff8a1a, date: 0xe97e18, heartRate: 0xd77416, battery: 0xd77416, warning: 0xfff200, alert: 0xff2d6f },
+  },
+  {
+    type: 100004, name: 'Red', title_sc: '红色', title_tc: '紅色',
+    colors: { time: 0xff2020, date: 0xe91d1d, heartRate: 0xd71b1b, battery: 0xd71b1b, warning: 0xffd60a, alert: 0xffffff },
+  },
+]
 
 export const FONT_SIZES = {
   time: 132,
@@ -87,21 +111,22 @@ export function heartRateRules(age) {
   const valid = typeof age === 'number' && age >= z.minAge && age <= z.maxAge
   const max = 220 - (valid ? age : z.defaultAge)
   return [
-    { atLeast: Math.round(max * z.alert), color: COLORS.alert },
-    { atLeast: Math.round(max * z.warning), color: COLORS.warning },
+    { atLeast: Math.round(max * z.alert), color: 'alert' },
+    { atLeast: Math.round(max * z.warning), color: 'warning' },
   ]
 }
 
 // Value-dependent colors. An item with `colorBy` takes the color of the first
 // rule that matches the numeric data value, otherwise its own `color`.
 // Rule conditions: `below: n` (value < n) or `atLeast: n` (value >= n).
-// Values that are not numbers, such as '--', keep the item's own color.
+// Rule colors are scheme roles. Values that are not numbers, such as '--', keep
+// the item's own color.
 export const COLOR_RULES = {
   battery: {
     value: 'battery',
     rules: [
-      { below: 20, color: COLORS.alert },
-      { below: 50, color: COLORS.warning },
+      { below: 20, color: 'alert' },
+      { below: 50, color: 'warning' },
     ],
   },
   // Built for `defaultAge`; index.js replaces the rules with the profile age.
@@ -128,8 +153,15 @@ export const TEXT_BOX_SCALE = 1.8
 // narrow ones like ':' and '.' are kept. Shorter values are padded with the
 // font's blank character so their digits sit exactly on the ghost cells
 // ('72' -> '!72' over '888'). Only fonts listed in `chars` get ghosts.
+// The brightness (ghost color = item color * level) is chosen on the watch
+// from `levels`: long-press the face > Edit > tap the date. Level 0 hides the
+// ghosts (drawn in the background color); the layout stays the same. Each
+// level's edit-mode option id is `typeBase + level * 100` (0.15 -> 100115);
+// keep `typeBase` unchanged.
 export const GHOST = {
-  brightness: 0.15, // default ghost color = item color * brightness (on black)
+  levels: [0, 0.05, 0.1, 0.15, 0.2],
+  default: 0.15,
+  typeBase: 100100,
   blank: '!', // DSEG: blank character as wide as a digit
   chars: {
     [FONTS.DSEG7_BOLD]: '8',
@@ -145,15 +177,15 @@ export const LINES = [
     y: CY + LINE_OFFSETS_Y.date,
     gap: 18,
     items: [
-      { id: 'weekday', value: 'weekday', font: FONTS.DSEG14_BOLD, size: FONT_SIZES.date, color: COLORS.date, reserve: 'WWW', ghost: true },
-      { id: 'daymonth', value: 'ddmm', font: FONTS.DSEG7_BOLD, size: FONT_SIZES.date, color: COLORS.date,  ghost: true },
+      { id: 'weekday', value: 'weekday', font: FONTS.DSEG14_BOLD, size: FONT_SIZES.date, color: 'date', reserve: 'WWW', ghost: true },
+      { id: 'daymonth', value: 'ddmm', font: FONTS.DSEG7_BOLD, size: FONT_SIZES.date, color: 'date',  ghost: true },
     ],
   },
   {
     id: 'time',
     y: CY + LINE_OFFSETS_Y.time,
     items: [
-      { id: 'clock', value: 'time', font: FONTS.DSEG7_BOLD, size: FONT_SIZES.time, color: COLORS.time, ghost: true },
+      { id: 'clock', value: 'time', font: FONTS.DSEG7_BOLD, size: FONT_SIZES.time, color: 'time', ghost: true },
     ],
   },
   {
@@ -161,8 +193,8 @@ export const LINES = [
     y: CY + LINE_OFFSETS_Y.heartRate,
     gap: 8,
     items: [
-      { id: 'heartRatePrefix', text: '!HR', font: FONTS.DSEG14_BOLD, size: FONT_SIZES.heartRate, color: COLORS.heartRate, colorBy: COLOR_RULES.heartRate, ghost: true },
-      { id: 'heartRate', value: 'heartRate', font: FONTS.DSEG7_BOLD, size: FONT_SIZES.heartRate, color: COLORS.heartRate, colorBy: COLOR_RULES.heartRate, reserve: '000', ghost: true },
+      { id: 'heartRatePrefix', text: '!HR', font: FONTS.DSEG14_BOLD, size: FONT_SIZES.heartRate, color: 'heartRate', colorBy: COLOR_RULES.heartRate, ghost: true },
+      { id: 'heartRate', value: 'heartRate', font: FONTS.DSEG7_BOLD, size: FONT_SIZES.heartRate, color: 'heartRate', colorBy: COLOR_RULES.heartRate, reserve: '000', ghost: true },
     ],
   },
   {
@@ -170,8 +202,20 @@ export const LINES = [
     y: CY + LINE_OFFSETS_Y.battery,
     gap: 8,
     items: [
-      { id: 'batteryPrefix', text: 'BAT', font: FONTS.DSEG14_BOLD, size: FONT_SIZES.battery, color: COLORS.battery, colorBy: COLOR_RULES.battery, ghost: true },
-      { id: 'battery', value: 'battery', font: FONTS.DSEG7_BOLD, size: FONT_SIZES.battery, color: COLORS.battery, colorBy: COLOR_RULES.battery, reserve: '000', align: 'right', ghost: true },
+      { id: 'batteryPrefix', text: 'BAT', font: FONTS.DSEG14_BOLD, size: FONT_SIZES.battery, color: 'battery', colorBy: COLOR_RULES.battery, ghost: true },
+      { id: 'battery', value: 'battery', font: FONTS.DSEG7_BOLD, size: FONT_SIZES.battery, color: 'battery', colorBy: COLOR_RULES.battery, reserve: '000', align: 'right', ghost: true },
     ],
   },
 ]
+
+// Edit mode (long-press the face > Edit): each option list is a tappable area
+// centered on a line. `id` must stay unique and unchanged (the watch stores the
+// choice under it). `tips` places the option name above or below the area.
+// After changing sizes, run `node tools/make-edit-images.mjs`.
+export const EDIT = {
+  scheme: { id: 101, line: 'time', w: 464, h: 120, tips: 'below' }, // covers the clock
+  ghost: { id: 102, line: 'date', w: 340, h: 90, tips: 'above' },
+  tipsSize: { w: 180, h: 44 },
+  tipsColor: 0xf0f0f0, // label background; the watch draws the option name in dark text
+  gap: 6, // between an area and its tips
+}

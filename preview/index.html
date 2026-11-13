@@ -2,7 +2,7 @@
 <html lang="en">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Green Minimal Preview</title>
+<title>LCD Minimal Preview</title>
 <script type="importmap">
 { "imports": {
   "@zos/ui": "/preview/zos-browser.js",
@@ -23,6 +23,12 @@ body { margin: 0; min-height: 100vh; display: grid; place-content: center; gap: 
 .guides .guide { display: block; }
 .guide.v { top: 0; bottom: 0; width: 0; border-left: 1px dashed #ff40ff99; }
 .guide.h { left: 0; right: 0; height: 0; border-top: 1px dashed #40ffff66; }
+.edit-area { position: absolute; display: none; pointer-events: none; outline: 1px dashed #ffd60a99; }
+.guides .edit-area { display: block; }
+/* ?shot=1: only the face at the top left, for tools/make-icon.mjs */
+.shot { display: block; padding: 0; background: #000; }
+.shot .controls, .shot #metrics { display: none; }
+.shot #face { box-shadow: none; }
 .controls { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; align-items: center; }
 select, label { background: #252c26; color: #eee; border: 1px solid #526353; border-radius: 5px; padding: 6px 8px; }
 #metrics { font: 12px ui-monospace, monospace; color: #9fb39f; text-align: center; white-space: pre; margin: 0; }
@@ -38,18 +44,29 @@ select, label { background: #252c26; color: #eee; border: 1px solid #526353; bor
     <option value="warning">Elevated HR / half battery</option>
     <option value="alert">High HR / low battery</option>
   </select>
+  <select id="scheme" aria-label="Color scheme (watch edit mode)"></select>
+  <select id="ghost" aria-label="Ghost level (watch edit mode)"></select>
   <label><input type="checkbox" id="guides"> Guides</label>
 </div>
 <pre id="metrics"></pre>
 <script>
 // Live reload from preview/server.mjs. Registered before the face code runs, so a
-// broken config.js still reloads once it is fixed.
-new EventSource('/__reload').onmessage = () => location.reload()
+// broken config.js still reloads once it is fixed. Off for screenshots (?shot=1),
+// where an open connection would keep the page loading forever.
+if (new URLSearchParams(location.search).get('shot') === '1') document.body.classList.add('shot')
+else new EventSource('/__reload').onmessage = () => location.reload()
 </script>
 <script type="module">
 import { mock } from '/preview/zos-browser.js'
 const config = await import('/watchface/config.js')
+const edit = await import('/watchface/edit.js')
 const params = new URLSearchParams(location.search)
+
+// Edit-mode choices, as if picked on the watch: ?scheme=cyan&ghost=10 (percent).
+const schemeOption = edit.OPTIONS.scheme.find((o) => o.title_en.toLowerCase() === params.get('scheme'))
+const ghostOption = edit.OPTIONS.ghost.find((o) => '' + Math.round(o.level * 100) === params.get('ghost'))
+if (schemeOption) mock.edit[config.EDIT.scheme.id] = schemeOption.type
+if (ghostOption) mock.edit[config.EDIT.ghost.id] = ghostOption.type
 
 const face = document.querySelector('#face')
 face.style.width = config.SCREEN.width + 'px'
@@ -87,7 +104,6 @@ const outside = (line, m) => m.items.filter(({ item, x, w }) => {
   return [x, x + w].some((px) => [cy - half, cy + half].some((py) =>
     Math.hypot(px - config.CX, py - config.CY) > radius))
 }).map(({ item }) => item.id)
-const colorName = (color) => Object.keys(config.COLORS).find((key) => config.COLORS[key] === color) || '#' + color.toString(16)
 const showMetrics = () => {
   document.querySelector('#metrics').textContent = config.LINES
     .filter((line) => line.show !== false)
@@ -99,8 +115,10 @@ const showMetrics = () => {
     })
     .join('\n') + `\nscreen ${config.SCREEN.width}x${config.SCREEN.height}` +
     Object.entries(config.COLOR_RULES).map(([name, { rules }]) => `\n${name} colors: ` +
-      rules.map((r) => (r.below !== undefined ? `<${r.below}` : `>=${r.atLeast}`) + ' ' + colorName(r.color)).join(', ') +
-      (name === 'heartRate' ? `  (profile age ${mock.profile.age}, ?age= to change)` : '')).join('')
+      rules.map((r) => (r.below !== undefined ? `<${r.below}` : `>=${r.atLeast}`) + ' ' + r.color).join(', ') +
+      (name === 'heartRate' ? `  (profile age ${mock.profile.age}, ?age= to change)` : '')).join('') +
+    `
+edit mode: scheme ${edit.schemeFor(mock.edit[config.EDIT.scheme.id]).name}, ghost ${Math.round(definition.theme.ghost * 100)}%`
 }
 const apply = (name) => {
   Object.assign(mock.readings, samples[name])
@@ -120,6 +138,19 @@ const setParam = (key, value) => {
   url.searchParams.set(key, value)
   history.replaceState(null, '', url)
 }
+// Edit-mode selectors: the watch restarts the face after a choice, so reload too.
+const fillSelect = (el, options, value, key) => {
+  options.forEach(({ label, param }) => el.add(new Option(label, param)))
+  el.value = value
+  el.addEventListener('change', () => { setParam(key, el.value); location.reload() })
+}
+const selected = (key) => edit.OPTIONS[key].find((o) => o.type === (mock.edit[config.EDIT[key].id] ?? edit.DEFAULT_TYPE[key]))
+fillSelect(document.querySelector('#scheme'),
+  edit.OPTIONS.scheme.map((o) => ({ label: o.title_en, param: o.title_en.toLowerCase() })),
+  selected('scheme').title_en.toLowerCase(), 'scheme')
+fillSelect(document.querySelector('#ghost'),
+  edit.OPTIONS.ghost.map((o) => ({ label: o.title_en, param: '' + Math.round(o.level * 100) })),
+  '' + Math.round(selected('ghost').level * 100), 'ghost')
 sample.addEventListener('change', () => { apply(sample.value); setParam('sample', sample.value) })
 guides.addEventListener('change', () => { face.classList.toggle('guides', guides.checked); setParam('guides', guides.checked ? 1 : 0) })
 </script>
