@@ -27,11 +27,14 @@ body { margin: 0; min-height: 100vh; display: grid; place-content: center; gap: 
 .guides .edit-area { display: block; }
 /* ?shot=1: only the face at the top left, for tools/make-icon.mjs */
 .shot { display: block; padding: 0; background: #000; }
-.shot .controls, .shot #metrics { display: none; }
+.shot .controls, .shot #metrics, .shot #colors { display: none; }
 .shot #face { box-shadow: none; }
 .controls { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; align-items: center; }
 select, label { background: #252c26; color: #eee; border: 1px solid #526353; border-radius: 5px; padding: 6px 8px; }
 #metrics { font: 12px ui-monospace, monospace; color: #9fb39f; text-align: center; white-space: pre; margin: 0; }
+#colors { justify-self: center; border-spacing: 12px 6px; text-align: left; }
+#colors td { background: #000; }
+#colors a { display: block; padding: 6px 8px; color: inherit; font: 12px ui-monospace, monospace; }
 @media (max-width: 520px) { .stage { zoom: .7; } }
 </style>
 <div class="stage" id="stage"><div id="face"></div></div>
@@ -49,6 +52,10 @@ select, label { background: #252c26; color: #eee; border: 1px solid #526353; bor
   <label><input type="checkbox" id="guides"> Guides</label>
 </div>
 <pre id="metrics"></pre>
+<table id="colors">
+  <thead><tr><th scope="col">Scheme</th><th scope="col">Warning</th><th scope="col">Alert</th></tr></thead>
+  <tbody></tbody>
+</table>
 <script>
 // Live reload from preview/server.mjs. Registered before the face code runs, so a
 // broken config.js still reloads once it is fixed. Off for screenshots (?shot=1),
@@ -61,6 +68,29 @@ import { mock } from '/preview/zos-browser.js'
 const config = await import('/watchface/config.js')
 const edit = await import('/watchface/edit.js')
 const params = new URLSearchParams(location.search)
+
+config.SCHEMES.forEach(({ name, colors }) => {
+  const row = document.createElement('tr')
+  const heading = document.createElement('th')
+  heading.scope = 'row'
+  heading.textContent = name
+  row.append(heading)
+  for (const role of ['warning', 'alert']) {
+    const cell = document.createElement('td')
+    const link = document.createElement('a')
+    const hex = '#' + colors[role].toString(16).padStart(6, '0')
+    const url = new URL(location.href)
+    url.searchParams.set('scheme', name.toLowerCase())
+    url.searchParams.set('sample', role)
+    link.href = url
+    link.textContent = hex
+    link.style.color = hex
+    link.setAttribute('aria-label', `${name} ${role}: ${hex}`)
+    cell.append(link)
+    row.append(cell)
+  }
+  document.querySelector('#colors tbody').append(row)
+})
 
 // Edit-mode choices, as if picked on the watch: ?scheme=cyan&ghost=10 (percent).
 const schemeOption = edit.OPTIONS.scheme.find((o) => o.title_en.toLowerCase() === params.get('scheme'))
