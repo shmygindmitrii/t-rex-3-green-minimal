@@ -1,6 +1,6 @@
 // Watch face lifecycle: reads sensors into `values` and hands them to the layout.
 // Layout, fonts and colors are in config.js; the watch's edit-mode choices in edit.js.
-import { createWidget, widget } from '@zos/ui'
+import { createWidget, widget, show_level } from '@zos/ui'
 import { Time, HeartRate, Battery, Screen } from '@zos/sensor'
 import { queryPermission } from '@zos/app'
 import { getProfile } from '@zos/user'
@@ -37,6 +37,7 @@ WatchFace({
 
     createWidget(widget.FILL_RECT, {
       x: 0, y: 0, w: SCREEN.width, h: SCREEN.height, color: BACKGROUND,
+      show_level: show_level.ONLY_NORMAL | show_level.ONLY_AOD,
     })
 
     // Each reader fills its part of `values`; render() pushes them to the widgets.
@@ -53,7 +54,10 @@ WatchFace({
     const readBattery = () => {
       this.values.battery = '' + this.battery.getCurrent()
     }
-    const render = () => this.ui.update(this.values)
+    const render = () => {
+      this.ui.update(this.values)
+      this.aod.update(this.values)
+    }
     const on = (read) => () => {
       if (this.destroyed) return
       read()
@@ -64,6 +68,12 @@ WatchFace({
     readHeart()
     readBattery()
     this.ui = buildLines(LINES, SCREEN, this.values)
+    // Reuse the time layout, but create no ghost widgets in AOD.
+    const aodLines = LINES.filter((line) => line.id === 'time').map((line) => ({
+      ...line, ghost: false,
+      items: line.items.filter((item) => item.value === 'time').map((item) => ({ ...item, ghost: false })),
+    }))
+    this.aod = buildLines(aodLines, SCREEN, this.values, undefined, show_level.ONLY_AOD)
     // Edit-mode areas, created after the lines: the watch draws widgets in creation
     // order, and the option previews must cover the live face while choosing.
     // Their choice can only be read once they exist, so the lines are recolored
@@ -71,6 +81,7 @@ WatchFace({
     // choice, so reading it once is enough.
     this.theme = readTheme()
     this.ui.setTheme(this.theme)
+    this.aod.setTheme(this.theme)
 
     this.refreshHeart = on(readHeart)
     this.refreshBattery = on(readBattery)

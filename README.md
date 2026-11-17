@@ -80,7 +80,8 @@ node preview/server.mjs
 
 Then open http://localhost:8080/. The page has sample values, including long
 values, missing heart rate, and warning and alert heart rate and battery readings.
-The scheme and ghost selectors act like the watch's edit mode. `Guides` shows
+The scheme and ghost selectors act like the watch's edit mode. `AOD` previews
+the time-only always-on display without ghost segments (`?aod=1`). `Guides` shows
 the center lines, widget boxes and edit-mode areas. Below the face, each line's
 width and position is listed, with a warning when an item goes outside the round
 screen.
@@ -102,7 +103,7 @@ watch.
 
 ## Compatibility
 
-Designed for Amazfit T-Rex 3 at 480 x 480. Custom always-on display is not included.
+Designed for Amazfit T-Rex 3 at 480 x 480, with a time-only always-on display.
 See [CHECKLIST.md](CHECKLIST.md) for build and device checks.
 
 Heart rate follows the watch's latest measurement and does not request continuous

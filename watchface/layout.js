@@ -1,6 +1,6 @@
 // Line layout engine: measures items, centers each line and keeps widgets in sync.
 // Positions are never hardcoded; they are computed from config.js on every update.
-import { createWidget, widget, align, prop, text_style } from '@zos/ui'
+import { createWidget, widget, align, prop, text_style, show_level } from '@zos/ui'
 import { FONT_METRICS } from './font-metrics.js'
 import { TEXT_BOX_SCALE, GHOST, BACKGROUND } from './config.js'
 import { DEFAULT_THEME } from './edit.js'
@@ -149,7 +149,7 @@ function textWidget(item, box, text, color) {
 //   measure(lineId) last layout of a line ({ width, x, items })
 //   setTheme(theme) recolor everything for another theme
 // `theme` is { colors, ghost }: the scheme's colors and the ghost level.
-export function buildLines(lines, screen, values, theme = DEFAULT_THEME) {
+export function buildLines(lines, screen, values, theme = DEFAULT_THEME, level = show_level.ONLY_NORMAL) {
   const widgets = {}
   const ghosts = {}
   const state = {}
@@ -158,7 +158,7 @@ export function buildLines(lines, screen, values, theme = DEFAULT_THEME) {
 
   shown.forEach((line) => {
     measureLine(line, values, screen.width, theme.colors).items.forEach(({ item, text, ghost, color, x, w }) => {
-      const box = { x, w, ...itemBox(item, line) }
+      const box = { x, w, ...itemBox(item, line), show_level: level }
       // Created first so it is drawn behind the lit text.
       if (ghost !== null) ghosts[item.id] = textWidget(item, box, ghost, ghostColor(item, line, color, theme))
       widgets[item.id] = textWidget(item, box, text, color)

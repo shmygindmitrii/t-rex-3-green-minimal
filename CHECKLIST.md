@@ -39,9 +39,10 @@ Author: Dmitrii Shmygin. Target: Amazfit T-Rex 3, 480 x 480.
 9. Leave the screen off for several minutes, then wake it: time must be correct
    immediately. Also open an app, wait past a minute boundary, and return to the
    face. Repeat across an hour change; do not wait for a minute callback to catch up.
-10. Custom AOD is not included. Confirm that the normal face appears after
-    screen-off/wake cycles. A system AOD style can be used if offered by the watch
-    firmware; this package does not supply its own AOD design.
+10. Enable AOD using the watch face style. Confirm only HH:MM appears, in the
+    selected scheme, without date, heart rate, battery or ghost segments. Leave
+    it in AOD across a minute and hour change; confirm the time updates and the
+    complete normal face returns immediately on wake.
 11. Leave the face active across midnight and check date and weekday, or test the
     boundary with simulator time controls. Month and year boundaries need checking too.
 12. Review Developer Mode logs for runtime errors. Compare battery use over a normal

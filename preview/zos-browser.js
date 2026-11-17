@@ -17,6 +17,15 @@ export const widget = { TEXT: 'TEXT', FILL_RECT: 'FILL_RECT', WIDGET_DELEGATE: '
 export const align = { LEFT: 'flex-start', RIGHT: 'flex-end', CENTER_H: 'center', TOP: 'flex-start', BOTTOM: 'flex-end', CENTER_V: 'center' }
 export const prop = { TEXT: 'TEXT', MORE: 'MORE', CURRENT_TYPE: 'CURRENT_TYPE' }
 export const text_style = { NONE: 'NONE', WRAP: 'WRAP', ELLIPSIS: 'ELLIPSIS' }
+export const show_level = { ONLY_NORMAL: 1, ONLY_AOD: 2, ONLY_EDIT: 4 }
+
+export function setAod(enabled) {
+  mock.aod = enabled
+  mock.widgets.forEach(({ el, state }) => {
+    el.hidden = !(state.show_level & (enabled ? show_level.ONLY_AOD : show_level.ONLY_NORMAL))
+  })
+  mock.listeners.resume()
+}
 
 const fonts = {}
 function fontFamily(path) {

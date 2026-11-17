@@ -27,7 +27,7 @@
           "path": "watchface/index",
           "main": 1,
           "editable": 1,
-          "lockscreen": 0,
+          "lockscreen": 1,
           "hightCost": 0
         }
       },

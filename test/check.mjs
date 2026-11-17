@@ -5,7 +5,7 @@ import assert from 'node:assert/strict'
 import { register } from 'node:module'
 
 register('./hooks.mjs', import.meta.url)
-const { mock } = await import('./zos-mock.mjs')
+const { mock, show_level } = await import('./zos-mock.mjs')
 const { readings, listeners } = mock
 let face
 globalThis.WatchFace = (definition) => { face = definition }
@@ -32,6 +32,17 @@ assert.equal(bare('clock'), '23:59')
 assert.equal(bare('heartRate'), '199')
 assert.equal(bare('battery'), '100')
 assert.equal(bare('weekday') + ' ' + bare('daymonth'), 'SUN 31.12')
+
+// --- AOD has only the time, without ghost widgets or normal-mode data
+assert.deepEqual(Object.keys(face.aod.widgets), ['clock'])
+assert.deepEqual(Object.keys(face.aod.ghosts), [])
+assert.equal(face.aod.widgets.clock.text, '23:59')
+assert.equal(face.aod.widgets.clock.show_level, show_level.ONLY_AOD)
+for (const entry of [...Object.values(w), ...Object.values(face.ui.ghosts)]) {
+  assert.equal(entry.show_level, show_level.ONLY_NORMAL)
+}
+const aodWidgets = mock.widgets.filter((entry) => entry.show_level & show_level.ONLY_AOD)
+assert.deepEqual(aodWidgets.map((entry) => entry.type), ['FILL_RECT', 'TEXT'])
 
 // --- layout: every visible line is centered on the screen, items do not overlap,
 //     and every item is vertically centered on its line
@@ -70,6 +81,7 @@ assert.equal(bare('weekday') + ' ' + bare('daymonth'), 'MON 01.01')
 readings.minute = 1
 listeners.minute()
 assert.equal(bare('clock'), '00:01')
+assert.equal(face.aod.widgets.clock.text, '00:01')
 
 // --- stale time after sleep: no minute event is delivered during the gap
 const lateHeart = listeners.heart
@@ -83,6 +95,7 @@ Object.assign(readings, { hour: 17, minute: 7 })
 assert.equal(bare('clock'), '16:38')
 listeners.screen(1)
 assert.equal(bare('clock'), '17:07')
+assert.equal(face.aod.widgets.clock.text, '17:07')
 
 // --- returning from another app also catches up without a minute callback
 Object.assign(readings, { hour: 0, minute: 0, day: 2, date: 2 })
@@ -342,14 +355,16 @@ const buildEdited = (choice) => {
   mock.edit = choice
   Object.assign(readings, { hour: 10, minute: 9, bpm: 72, battery: 82 })
   face.build()
-  const result = { theme: face.theme, ui: face.ui }
+  const result = { theme: face.theme, ui: face.ui, aod: face.aod }
   face.onDestroy()
   mock.edit = {}
   return result
 }
 for (const scheme of SCHEMES) {
   for (const level of GHOST.levels) {
-    const { theme, ui } = buildEdited({ [EDIT.scheme.id]: scheme.type, [EDIT.ghost.id]: edit.ghostType(level) })
+    const { theme, ui, aod } = buildEdited({ [EDIT.scheme.id]: scheme.type, [EDIT.ghost.id]: edit.ghostType(level) })
+    assert.equal(aod.widgets.clock.color, scheme.colors.time, `${scheme.name} AOD time`)
+    assert.deepEqual(Object.keys(aod.ghosts), [])
     assert.equal(theme.colors, scheme.colors)
     assert.equal(theme.ghost, level)
     assert.equal(ui.widgets.clock.color, scheme.colors.time, `${scheme.name} time`)
@@ -385,4 +400,4 @@ for (const id of Object.keys(lit)) {
 }
 
 console.log('PASS: startup, centering, reserved widths, rollover, wake/resume catch-up, cleanup, hidden items, ghosts, value colors, age-based heart-rate zones, color schemes, ghost levels, edit mode.')
-console.log('Device rendering still requires real-watch checks. Custom AOD is not included.')
+console.log('PASS: AOD time only, no ghosts, scheme colors, minute updates and wake. Device rendering still requires real-watch checks.')

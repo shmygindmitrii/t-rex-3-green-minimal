@@ -18,6 +18,7 @@ body { margin: 0; min-height: 100vh; display: grid; place-content: center; gap: 
 .stage { position: relative; justify-self: center; }
 #face { position: relative; overflow: hidden; border-radius: 50%; box-shadow: 0 0 0 2px #313831; }
 .widget { position: absolute; display: flex; line-height: 1; white-space: pre; overflow: hidden; }
+.widget[hidden], #face.aod .guide, #face.aod .edit-area { display: none; }
 .guides .widget-text { outline: 1px dashed #4a6dff88; }
 .guide { position: absolute; pointer-events: none; display: none; }
 .guides .guide { display: block; }
@@ -50,6 +51,7 @@ select, label { background: #252c26; color: #eee; border: 1px solid #526353; bor
   <select id="scheme" aria-label="Color scheme (watch edit mode)"></select>
   <select id="ghost" aria-label="Ghost level (watch edit mode)"></select>
   <label><input type="checkbox" id="guides"> Guides</label>
+  <label><input type="checkbox" id="aod"> AOD</label>
 </div>
 <pre id="metrics"></pre>
 <table id="colors">
@@ -64,7 +66,7 @@ if (new URLSearchParams(location.search).get('shot') === '1') document.body.clas
 else new EventSource('/__reload').onmessage = () => location.reload()
 </script>
 <script type="module">
-import { mock } from '/preview/zos-browser.js'
+import { mock, setAod } from '/preview/zos-browser.js'
 const config = await import('/watchface/config.js')
 const edit = await import('/watchface/edit.js')
 const params = new URLSearchParams(location.search)
@@ -183,5 +185,13 @@ fillSelect(document.querySelector('#ghost'),
   '' + Math.round(selected('ghost').level * 100), 'ghost')
 sample.addEventListener('change', () => { apply(sample.value); setParam('sample', sample.value) })
 guides.addEventListener('change', () => { face.classList.toggle('guides', guides.checked); setParam('guides', guides.checked ? 1 : 0) })
+const aod = document.querySelector('#aod')
+const applyAod = () => {
+  face.classList.toggle('aod', aod.checked)
+  setAod(aod.checked)
+}
+aod.checked = params.get('aod') === '1'
+applyAod()
+aod.addEventListener('change', () => { applyAod(); setParam('aod', aod.checked ? 1 : 0) })
 </script>
 </html>

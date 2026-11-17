@@ -13,6 +13,7 @@ export const widget = { TEXT: 'TEXT', FILL_RECT: 'FILL_RECT', WIDGET_DELEGATE: '
 export const align = { LEFT: 'LEFT', RIGHT: 'RIGHT', CENTER_H: 'CENTER_H', TOP: 'TOP', BOTTOM: 'BOTTOM', CENTER_V: 'CENTER_V' }
 export const prop = { TEXT: 'TEXT', MORE: 'MORE', CURRENT_TYPE: 'CURRENT_TYPE' }
 export const text_style = { NONE: 'NONE', WRAP: 'WRAP', ELLIPSIS: 'ELLIPSIS' }
+export const show_level = { ONLY_NORMAL: 1, ONLY_AOD: 2, ONLY_EDIT: 4 }
 
 export function createWidget(type, options) {
   const instance = {
