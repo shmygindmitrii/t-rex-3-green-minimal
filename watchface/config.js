@@ -78,6 +78,10 @@ export const SCHEMES = [
     type: 100004, name: 'Red', title_sc: '红色', title_tc: '紅色',
     colors: { time: 0xff2020, date: 0xe91d1d, heartRate: 0xd71b1b, battery: 0xd71b1b, warning: 0xfff200, alert: 0xffffff },
   },
+  {
+    type: 100005, name: 'White', title_sc: '白色', title_tc: '白色',
+    colors: { time: 0xffffff, date: 0xffffff, heartRate: 0xffffff, battery: 0xffffff, warning: 0xff8239, alert: 0xff3b30 },
+  },
 ]
 
 export const FONT_SIZES = {
