@@ -64,19 +64,19 @@ export const BACKGROUND = 0x000000
 export const SCHEMES = [
   {
     type: 100001, name: 'Green', title_sc: '绿色', title_tc: '綠色',
-    colors: { time: 0x00ff18, date: 0x00e90b, heartRate: 0x00d701, battery: 0x00d701, warning: 0xffd60a, alert: 0xff3b30 },
+    colors: { time: 0x00ff18, date: 0x00e90b, heartRate: 0x00d701, battery: 0x00d701, warning: 0xff8239, alert: 0xff3b30 },
   },
   {
     type: 100002, name: 'Cyan', title_sc: '青色', title_tc: '青色',
-    colors: { time: 0x00e5ff, date: 0x00d1e9, heartRate: 0x00c1d7, battery: 0x00c1d7, warning: 0xffd60a, alert: 0xff3b30 },
+    colors: { time: 0x00e5ff, date: 0x00d1e9, heartRate: 0x00c1d7, battery: 0x00c1d7, warning: 0xff8239, alert: 0xff3b30 },
   },
   {
     type: 100003, name: 'Orange', title_sc: '橙色', title_tc: '橙色',
-    colors: { time: 0xff8a1a, date: 0xe97e18, heartRate: 0xd77416, battery: 0xd77416, warning: 0xfff200, alert: 0xff2d6f },
+    colors: { time: 0xff8a1a, date: 0xe97e18, heartRate: 0xd77416, battery: 0xd77416, warning: 0xfff200, alert: 0xffffff },
   },
   {
     type: 100004, name: 'Red', title_sc: '红色', title_tc: '紅色',
-    colors: { time: 0xff2020, date: 0xe91d1d, heartRate: 0xd71b1b, battery: 0xd71b1b, warning: 0xffd60a, alert: 0xffffff },
+    colors: { time: 0xff2020, date: 0xe91d1d, heartRate: 0xd71b1b, battery: 0xd71b1b, warning: 0xfff200, alert: 0xffffff },
   },
 ]
 
